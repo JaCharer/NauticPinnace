@@ -472,6 +472,16 @@ void N2kHandler::onEngineDynamic(const tN2kMsg &msg) {
     // hours ("h"). Without this conversion an engine with 1287 h showed the value
     // 4633200.
     if (!N2kIsNA(hours))       data.engineHours  = (float)(hours / 3600.0);     // s→h
+    // BUG FIXED: this handler never touched lastEngineUpdate, yet oil/coolant/
+    // fuel/hours share that ONE timestamp with rpm (see DataTimeouts::engine +
+    // dmFieldFreshByKey in DemoData.cpp) - so their on-screen freshness was
+    // governed entirely by how often PGN 127488 (Rapid, RPM-only) arrived, not
+    // by this PGN (127489, Dynamic) at all. On gateways/ECUs where the two
+    // PGNs run at different, jittery rates that made the whole engine card
+    // flicker "gone" and back every few seconds even while both PGNs kept
+    // arriving. Any 127489 frame now also counts as "the engine category is
+    // alive", same as onOutsideEnv/onEnvParams already do for lastEnvUpdate.
+    data.lastEngineUpdate = millis();
 }
 
 void N2kHandler::onBattery(const tN2kMsg &msg) {

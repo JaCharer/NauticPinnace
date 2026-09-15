@@ -82,7 +82,10 @@ struct DataTimeouts {
     uint32_t gps          = 10000;    // lat/lon/sog/cog/hdg/variation/stw
     uint32_t wind         = 5000;     // awa/aws/twa/tws/twd
     uint32_t depth        = 5000;
-    uint32_t engine       = 5000;     // rpm/oilPressure/coolantTemp/fuelFlow/engineHours
+    uint32_t engine       = 10000;    // rpm/oilPressure/coolantTemp/fuelFlow/engineHours -
+                                       // was 5000; 127488(Rapid)/127489(Dynamic) can arrive
+                                       // at noticeably different, jittery rates on some
+                                       // gateways, so the shared timestamp needs real margin.
     uint32_t rudder       = 3000;
     uint32_t attitude     = 3000;     // roll/pitch/yaw/rateOfTurn/heave
     uint32_t env          = 30000;    // airTemp/waterTemp/humidity/pressure

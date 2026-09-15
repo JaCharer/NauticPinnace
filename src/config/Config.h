@@ -71,6 +71,32 @@ struct GridConfig {
     GridCell cells[9];
 };
 
+// Per-category "how old can a value be before the UI treats it as gone"
+// thresholds, in milliseconds. The categories match DataModel's lastXUpdate
+// granularity (several related fields share one timestamp - see DataModel.h),
+// not individual fields. Defaults are generous multiples of each category's
+// typical NMEA 2000 transmit period, so a little jitter (especially over the
+// UDP/Actisense source, which can be burstier than raw CAN) never flickers
+// "stale" on its own.
+struct DataTimeouts {
+    uint32_t gps          = 10000;    // lat/lon/sog/cog/hdg/variation/stw
+    uint32_t wind         = 5000;     // awa/aws/twa/tws/twd
+    uint32_t depth        = 5000;
+    uint32_t engine       = 5000;     // rpm/oilPressure/coolantTemp/fuelFlow/engineHours
+    uint32_t rudder       = 3000;
+    uint32_t attitude     = 3000;     // roll/pitch/yaw/rateOfTurn/heave
+    uint32_t env          = 30000;    // airTemp/waterTemp/humidity/pressure
+    uint32_t log          = 15000;    // logDistance/tripDistance
+    uint32_t nav          = 10000;    // waypoint dtw/btw/xte/vmc
+    uint32_t autopilot    = 3000;
+    uint32_t fusion       = 15000;
+    uint32_t tideBus      = 60000;
+    uint32_t tideForecast = 3600000;  // BSH fetch, refreshed rarely by design
+    uint32_t battery      = 20000;    // per bank
+    uint32_t tank         = 30000;    // per tank
+    uint32_t ais          = 300000;   // was a hardcoded literal in purgeAisTargets()
+};
+
 // Right-hand data sidebar on the 7B (1024x600): a 1xN column of value cells,
 // configurable in the WebUI. Reuses the GridCell struct and the same pgn keys
 // as the data grids. Serialized on every board (config files stay portable);
@@ -176,6 +202,9 @@ struct AppConfig {
     // Empty = regenerated on the next start (this way an existing device also
     // gets a random password automatically on update).
     char     apPass[20]       = "";
+
+    // How old a value may get before the UI shows it as gone (see DataTimeouts).
+    DataTimeouts dataTimeouts;
 
     // Engine
     EngineConfig engine;

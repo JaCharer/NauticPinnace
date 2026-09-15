@@ -128,8 +128,8 @@ void GridScreen::update() {
         char buf[20];
         fmtVal(buf, sizeof(buf), val, cfg.decimals);
         lv_label_set_text(_cells[i].lblValue, buf);
-        // Stale data dim
-        lv_color_t col = isnan(val) ? CLR_TEXT_DIM : CLR_TEXT;
+        // Stale data dim: never received (NaN) OR older than its configured timeout
+        lv_color_t col = (isnan(val) || !dmFieldFreshByKey(cfg.pgn)) ? CLR_TEXT_DIM : CLR_TEXT;
         lv_obj_set_style_text_color(_cells[i].lblValue, col, 0);
     }
 }

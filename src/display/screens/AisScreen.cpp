@@ -303,6 +303,6 @@ void AisScreen::update() {
     snprintf(buf, sizeof(buf), "%d %s", cnt,
              cnt != 1 ? T(STR_AIS_TARGETS) : T(STR_AIS_TARGET_ONE));
     lv_label_set_text(_countLbl, buf);
-    { auto lk=data.lock(); data.purgeAisTargets(); }
+    { auto lk=data.lock(); data.purgeAisTargets(appConfig.cfg.dataTimeouts.ais); }
     drawRadar();
 }

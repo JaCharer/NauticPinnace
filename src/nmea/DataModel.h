@@ -65,6 +65,15 @@ struct BatteryBank {
     uint32_t lastUpdate  = 0;
 };
 
+// Read-side "is this still fresh" check, shared by every screen that dims a
+// value once its category's lastXUpdate falls behind the configured timeout
+// (see Config.h's DataTimeouts). Deliberately NOT applied on the write side -
+// no background task ever forces a field back to NaN, so there is nothing to
+// race with the PGN handlers that set lastXUpdate.
+static inline bool dmFresh(uint32_t lastUpdate, uint32_t timeoutMs) {
+    return lastUpdate != 0 && (millis() - lastUpdate) < timeoutMs;
+}
+
 class DataModel {
 public:
     // ---- Navigation --------------------------------------------------------
@@ -656,3 +665,7 @@ extern DataModel data;
 // Resolve a config field key ("sog","depth","oil",…) to its live value.
 // Takes the data lock internally. Shared by GridScreen + EngineScreen.
 float dmFieldByKey(const char *key);
+
+// Is that same key's category still within its configured timeout? See the
+// definition in DemoData.cpp for the key->category grouping.
+bool dmFieldFreshByKey(const char *key);

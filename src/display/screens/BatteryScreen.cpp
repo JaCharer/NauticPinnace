@@ -125,6 +125,12 @@ void BatteryScreen::update() {
         if (_shownCount != 0) { layout(0); lv_obj_clear_flag(_empty, LV_OBJ_FLAG_HIDDEN); _shownCount = 0; }
         return;
     }
+    // Timed-out bank: blank the live fields so every isnan() branch below
+    // renders it the same way as "never received" instead of a frozen reading.
+    for (int i = 0; i < n; i++) {
+        if (!dmFresh(list[i].lastUpdate, appConfig.cfg.dataTimeouts.battery))
+            list[i].voltage = list[i].current = list[i].soc = list[i].timeRemMin = NAN;
+    }
     lv_obj_add_flag(_empty, LV_OBJ_FLAG_HIDDEN);
     if (n != _shownCount) { layout(n); _shownCount = n; }
 

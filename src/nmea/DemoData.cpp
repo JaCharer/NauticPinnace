@@ -5,6 +5,7 @@
 #include "DataModel.h"
 #include "FusionN2k.h"
 #include "../SunCalc.h"
+#include "../config/Config.h"
 #include <math.h>
 #include <string.h>
 #include <lvgl.h>              // lv_timer_get_idle() for the "cpu" field
@@ -57,6 +58,41 @@ float dmFieldByKey(const char *key) {
 #endif
     return NAN;
 }
+
+// Sibling of dmFieldByKey(): is the category behind this key still within its
+// configured timeout (Config.h's DataTimeouts)? Grouped the same way the
+// underlying lastXUpdate timestamps are grouped in DataModel - see the
+// comment there. Keys with no meaningful staleness concept (device-local
+// "cpu"/"ram", or "battv" which predates per-bank timestamps) are always
+// reported fresh; GridScreen/EngineScreen/SideBar combine this with isnan().
+bool dmFieldFreshByKey(const char *key) {
+    const DataTimeouts &to = appConfig.cfg.dataTimeouts;
+    auto lk = data.lock();
+    if (!strcmp(key,"sog") || !strcmp(key,"cog") || !strcmp(key,"hdg") ||
+        !strcmp(key,"stw") || !strcmp(key,"lat") || !strcmp(key,"lon") ||
+        !strcmp(key,"variation"))
+        return dmFresh(data.lastGpsUpdate, to.gps);
+    if (!strcmp(key,"awa") || !strcmp(key,"aws") || !strcmp(key,"twa") ||
+        !strcmp(key,"tws") || !strcmp(key,"twd"))
+        return dmFresh(data.lastWindUpdate, to.wind);
+    if (!strcmp(key,"depth"))
+        return dmFresh(data.lastDepthUpdate, to.depth);
+    if (!strcmp(key,"rpm") || !strcmp(key,"oil") || !strcmp(key,"coolant") ||
+        !strcmp(key,"hours") || !strcmp(key,"fuel"))
+        return dmFresh(data.lastEngineUpdate, to.engine);
+    if (!strcmp(key,"rudder"))
+        return dmFresh(data.lastRudderUpdate, to.rudder);
+    if (!strcmp(key,"roll") || !strcmp(key,"pitch") || !strcmp(key,"yaw") || !strcmp(key,"rot"))
+        return dmFresh(data.lastAttitudeUpdate, to.attitude);
+    if (!strcmp(key,"heave") || !strcmp(key,"waveht") || !strcmp(key,"waveper"))
+        return dmFresh(data.lastHeaveUpdate, to.attitude);
+    if (!strcmp(key,"aptarget"))
+        return dmFresh(data.lastApUpdate, to.autopilot);
+    if (!strcmp(key,"log") || !strcmp(key,"trip"))
+        return dmFresh(data.lastLogUpdate, to.log);
+    return true;   // "battv", "cpu", "ram": no per-category timestamp to check
+}
+
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 static constexpr float PI_F  = (float)M_PI;

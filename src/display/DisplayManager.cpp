@@ -30,6 +30,7 @@
 #include "HomeOverlay.h"
 #include "LicenseOverlay.h"
 #include "LanguageOverlay.h"
+#include "N2kUdpOverlay.h"
 #include <string.h>
 
 DisplayManager dispMgr;
@@ -372,7 +373,8 @@ void DisplayManager::update() {
     // other three and never added here, so the instrument kept rendering at
     // full cost behind its tiles.
     const bool modalOpen = configOverlay.isOpen() || licenseOverlay.isOpen() ||
-                           languageOverlay.isOpen() || homeOverlay.isOpen();
+                           languageOverlay.isOpen() || homeOverlay.isOpen() ||
+                           n2kUdpOverlay.isOpen();
     // Suppressing the PAINT above is only half of it. LVGL still DRAWS the whole
     // screen behind the overlay and the overlay then paints over the result:
     // lv_refr.c searches for an object that covers the redraw area only inside

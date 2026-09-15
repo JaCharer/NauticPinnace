@@ -232,6 +232,10 @@ String Config::toJson() const {
     doc["nmea2000"]["can_tx"] = cfg.canTxPin;
     doc["nmea2000"]["can_rx"] = cfg.canRxPin;
     doc["nmea2000"]["listen_only"] = cfg.n2kListenOnly;
+    doc["nmea2000"]["udp_enabled"]     = cfg.n2kUdpEnabled;
+    doc["nmea2000"]["udp_remote_ip"]   = cfg.n2kUdpRemoteIp;
+    doc["nmea2000"]["udp_local_port"]  = cfg.n2kUdpLocalPort;
+    doc["nmea2000"]["udp_remote_port"] = cfg.n2kUdpRemotePort;
 
     doc["engine"]["rpm_idle"]     = cfg.engine.rpmIdle;
     doc["engine"]["rpm_cruise"]   = cfg.engine.rpmCruise;
@@ -462,6 +466,10 @@ bool Config::fromJson(const String &json) {
         cfg.canRxPin = -1;
     }
     cfg.n2kListenOnly = doc["nmea2000"]["listen_only"] | cfg.n2kListenOnly;
+    cfg.n2kUdpEnabled    = doc["nmea2000"]["udp_enabled"]     | cfg.n2kUdpEnabled;
+    cfg.n2kUdpLocalPort  = doc["nmea2000"]["udp_local_port"]  | cfg.n2kUdpLocalPort;
+    cfg.n2kUdpRemotePort = doc["nmea2000"]["udp_remote_port"] | cfg.n2kUdpRemotePort;
+    strlcpy(cfg.n2kUdpRemoteIp, doc["nmea2000"]["udp_remote_ip"] | cfg.n2kUdpRemoteIp, sizeof(cfg.n2kUdpRemoteIp));
 
     cfg.engine.rpmIdle    = doc["engine"]["rpm_idle"]     | cfg.engine.rpmIdle;
     cfg.engine.rpmCruise  = doc["engine"]["rpm_cruise"]   | cfg.engine.rpmCruise;

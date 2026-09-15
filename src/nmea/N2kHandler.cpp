@@ -1,6 +1,7 @@
 #include "N2kHandler.h"
 #include "DemoData.h"
 #include "FusionN2k.h"
+#include "N2kUdpSource.h"
 #include "../BoardConfig.h"
 #include "../Version.h"
 #include "../config/Config.h"
@@ -56,6 +57,15 @@ static inline float calNorm180(float deg) {
 // ---- Init -------------------------------------------------------------------
 
 void N2kHandler::begin() {
+    // Alternate source: decode Actisense/UDP instead of opening the local CAN
+    // controller. Mutually exclusive - the TWAI driver is never touched here,
+    // so a boat's real bus wiring can stay disconnected/absent entirely.
+    if (appConfig.cfg.n2kUdpEnabled) {
+        if (!n2kUdpSource.begin())
+            Serial.println("[n2k] UDP source failed to start - no NMEA2000 data at all");
+        return;
+    }
+
     // ---- CAN pins: board default unless the config overrides them ----------
     // This runs inside the N2K task, long after the config file was read, so
     // it is the first point where a configured pair CAN be applied - the
@@ -135,6 +145,8 @@ void N2kHandler::loop() {
         // Demo mode: inject synthetic data instead of reading the CAN bus.
         // demoData.tick() is internally rate-limited to ~5 Hz.
         demoData.tick();
+    } else if (appConfig.cfg.n2kUdpEnabled) {
+        n2kUdpSource.loop();
     } else {
         NMEA2000.ParseMessages();
     }

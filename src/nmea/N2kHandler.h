@@ -37,6 +37,12 @@ public:
     // Must be called frequently from the N2K task loop
     void loop();
 
+    // Feed one message into the SAME PGN dispatcher the CAN bus uses,
+    // regardless of where it came from. Used by N2kUdpSource so messages
+    // decoded from the Actisense/UDP stream update DataModel through the
+    // exact same handlers (and srcGate bookkeeping) as bus traffic.
+    static void dispatch(const tN2kMsg &msg) { handleMsg(msg); }
+
 private:
     static void handleMsg(const tN2kMsg &msg);
 

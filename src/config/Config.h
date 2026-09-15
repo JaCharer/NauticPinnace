@@ -171,6 +171,14 @@ struct AppConfig {
     // control) — for other people's boats, charter, or workshop appointments.
     // Takes effect on the next start because the mode is set in NMEA2000.Open().
     bool     n2kListenOnly    = false;
+    // Alternate source: instead of the CAN/TWAI bus, decode Actisense-format
+    // NMEA 2000 messages arriving over WiFi UDP (e.g. from a YDWG-02/NGT-1
+    // gateway on the same network). Mutually exclusive with the CAN bus -
+    // N2kHandler picks one or the other at startup, never both.
+    bool     n2kUdpEnabled    = false;
+    char     n2kUdpRemoteIp[16] = "";   // sender to accept packets from ("" = none configured yet)
+    uint16_t n2kUdpLocalPort    = 10120;
+    uint16_t n2kUdpRemotePort   = 0;    // optional sender-port filter; 0 = accept any port
     // Hotspot password: randomly generated ONCE per device (see Entropy.h) —
     // replaces the old "MdPw"+MAC scheme that was derivable from the MAC.
     // Empty = regenerated on the next start (this way an existing device also

@@ -46,6 +46,7 @@ private:
     static void cbThemeDark(lv_event_t *e);
     static void cbThemeNight(lv_event_t *e);   // red-preserving night mode
     static void cbLicenses(lv_event_t *e);     // show licences and modules
+    static void cbOpenUdpSettings(lv_event_t *e);  // open the NMEA/UDP sub-page
     static void cbLangDe(lv_event_t *e);       // language German
     static void cbLangEn(lv_event_t *e);       // language English
     static void cbThemeAuto(lv_event_t *e);

@@ -32,12 +32,24 @@
     X(CFG_THEME_LIGHT,    "Hell",                     "Light")                    \
     X(CFG_THEME_DARK,     "Dunkel",                   "Dark")                     \
     X(CFG_THEME_NIGHT,    "Nacht",                    "Night")                    \
-    X(CFG_LICENSES_BTN,   "Lizenzen und Module",      "Licences and modules")     \
+    X(CFG_LICENSES_BTN,   "Lizenzen&Mod.",            "Licences&mod.")            \
     /* Listen-only switch — space is tight (label + switch in the               */ \
     /* bottom row), hence deliberately short.                                   */ \
     X(CFG_N2K_LISTEN,     "Nur hören",                "RX only")                  \
     X(CFG_N2K_LISTEN_ON,  "Nur mithören...",          "Listen-only...")           \
     X(CFG_N2K_LISTEN_OFF, "Senden aktiv...",          "TX enabled...")            \
+    /* ── UDP/Actisense settings sub-page (opened from the button next to      */ \
+    /* Licences on the settings screen) ─────────────────────────────────────  */ \
+    X(CFG_UDP_BTN,        "UDP",                      "UDP")                      \
+    X(CFG_UDP_TITLE,      "NMEA 2000 über UDP",       "NMEA 2000 over UDP")       \
+    X(CFG_UDP_ENABLE,     "UDP-Empfang aktiv",        "UDP receive enabled")      \
+    X(CFG_UDP_REMOTE_IP,  "Quell-IP",                 "Source IP")                \
+    X(CFG_UDP_LOCAL_PORT, "Lokaler Port",             "Local port")               \
+    X(CFG_UDP_REMOTE_PORT,"Quell-Port",               "Source port")              \
+    X(CFG_UDP_SAVE_REBOOT,"Speichern & Neustart",     "Save & restart")           \
+    X(CFG_UDP_BAD_IP,     "Bitte eine gültige IP-Adresse eingeben",                \
+                          "Please enter a valid IP address")                     \
+    X(CFG_RB_UDP,         "NMEA/UDP wird gestartet...","Starting NMEA/UDP...")     \
     /* ── Licence overlay chrome (the licence TEXT itself is never translated) */ \
     X(LIC_TITLE,          "Verwendete Lizenzen",      "Licences in use")          \
     X(LIC_SUBTITLE,       "Bitte einmalig zur Kenntnis nehmen.",                  \

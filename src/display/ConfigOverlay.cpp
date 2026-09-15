@@ -3,6 +3,7 @@
 #include "../BoardConfig.h"   // board macros (the geometry comes from Theme.h)
 #endif
 #include "LicenseOverlay.h"
+#include "N2kUdpOverlay.h"
 #include "Theme.h"
 #include "DisplayManager.h"
 #include "../config/Config.h"
@@ -128,7 +129,11 @@ void ConfigOverlay::open() {
     // the theme buttons and the language row - the width simply is not there
     // once the button is wide enough to read.
     const int WIFI_LBL_X = CX1 + 326;   // 82 px clear of the switch: fits "WLAN"
-    const int LIC_W      = 280;         // measured need is ~230 px, plus margin
+    // Licences was widened to 280 for the scaled font (needs ~230 px); shrunk
+    // back to 190 here to make room for the "NMEA/UDP" button in the same row -
+    // still comfortably above the measured need.
+    const int LIC_W      = 190;
+    const int UDP_BTN_X  = CX1 + 114 + LIC_W + 8, UDP_BTN_W = 160;
     const int RX_LBL_X   = CX1,        RX_LBL_Y = CY_THEME + 110;
     const int RX_SW_X    = CX1 + 130,  RX_SW_Y  = CY_THEME + 106;
 #else
@@ -139,9 +144,14 @@ void ConfigOverlay::open() {
     // Unchanged 480-grid values: this is the released 4-inch product, whose
     // fonts were never scaled, so nothing overflows here and nothing may move.
     const int WIFI_LBL_X = CX1 + 372;
-    const int LIC_W      = 204;
-    const int RX_LBL_X   = CX1 + 326,  RX_LBL_Y = CY_ROW + 10;
-    const int RX_SW_X    = CX1 + 406,  RX_SW_Y  = CY_ROW + 6;
+    // Shrunk from 204 to make room for the "NMEA/UDP" button in the same row;
+    // this board has no spare row anywhere (see the note at CY_ROW below), so
+    // RX-only also moves closer in. TIGHT - verify on device/simulator before
+    // shipping; the caption may need to switch to just "UDP" if it clips.
+    const int LIC_W      = 140;
+    const int UDP_BTN_X  = CX1 + 114 + LIC_W + 6, UDP_BTN_W = 80;
+    const int RX_LBL_X   = UDP_BTN_X + UDP_BTN_W + 6,  RX_LBL_Y = CY_ROW + 10;
+    const int RX_SW_X    = RX_LBL_X + 54,              RX_SW_Y  = CY_ROW + 6;
 #endif
 
     _root = lv_obj_create(lv_layer_top());
@@ -277,6 +287,8 @@ void ConfigOverlay::open() {
              isEn ? CLR_ACCENT : CLR_SURFACE, isEn ? CLR_ON_ACCENT : CLR_TEXT, cbLangEn);
     mkButton(_root, T(STR_CFG_LICENSES_BTN), CX1 + 114, CY_ROW, LIC_W, 38,
              CLR_SURFACE, CLR_TEXT, cbLicenses);
+    mkButton(_root, T(STR_CFG_UDP_BTN), UDP_BTN_X, CY_ROW, UDP_BTN_W, 38,
+             CLR_SURFACE, CLR_TEXT, cbOpenUdpSettings);
     // Listen-only: N2km_ListenOnly — the device then sends nothing onto the bus
     // (no address claim, no heartbeat, no Fusion control). For other people's
     // boats, charter, workshop appointments. Takes effect after reboot.
@@ -406,6 +418,11 @@ void ConfigOverlay::cbThemeDark(lv_event_t *e) {
 void ConfigOverlay::cbLicenses(lv_event_t *e) {
     configOverlay.close();      // close first, then show the licences
     licenseOverlay.open();
+}
+
+void ConfigOverlay::cbOpenUdpSettings(lv_event_t *e) {
+    configOverlay.close();
+    n2kUdpOverlay.open();
 }
 
 void ConfigOverlay::cbThemeNight(lv_event_t *e) {

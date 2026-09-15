@@ -396,6 +396,33 @@ textarea{background:var(--input-bg);border:1px solid var(--border);color:var(--c
        — a route that never existed in WebConfig.cpp. It never worked.
        The C++ stubs (Config::sendViaN2k/receiveViaN2k) still exist, in case the
        idea of a config transfer via proprietary PGN is ever picked up again. -->
+
+  <div class="section">
+    <h2><span class="ico">⏱️</span> <span data-i18n="TO_H">Datenalter (erweitert)</span></h2>
+    <p data-i18n="TO_P" style="font-size:.85rem;color:var(--text-muted);margin-bottom:14px">
+      Wie lange ein Wert seit seiner letzten Aktualisierung angezeigt wird, bevor er im
+      Display ausgegraut wird. Wirkt sofort, kein Neustart nötig. Werte in Sekunden.
+    </p>
+    <div class="form-row"><label data-i18n="TO_GPS">GPS (Position/SOG/COG/HDG)</label><input type="number" id="to-gps" min="1"></div>
+    <div class="form-row"><label data-i18n="TO_WIND">Wind</label><input type="number" id="to-wind" min="1"></div>
+    <div class="form-row"><label data-i18n="TO_DEPTH">Tiefe</label><input type="number" id="to-depth" min="1"></div>
+    <div class="form-row"><label data-i18n="TO_ENGINE">Motor</label><input type="number" id="to-engine" min="1"></div>
+    <div class="form-row"><label data-i18n="TO_RUDDER">Ruder</label><input type="number" id="to-rudder" min="1"></div>
+    <div class="form-row"><label data-i18n="TO_ATTITUDE">Lage (Roll/Pitch/Heave)</label><input type="number" id="to-attitude" min="1"></div>
+    <div class="form-row"><label data-i18n="TO_ENV">Umgebung (Temp/Druck)</label><input type="number" id="to-env" min="1"></div>
+    <div class="form-row"><label data-i18n="TO_LOG">Logge (Distanz)</label><input type="number" id="to-log" min="1"></div>
+    <div class="form-row"><label data-i18n="TO_NAV">Navigation (Wegpunkt)</label><input type="number" id="to-nav" min="1"></div>
+    <div class="form-row"><label data-i18n="TO_AUTOPILOT">Autopilot</label><input type="number" id="to-autopilot" min="1"></div>
+    <div class="form-row"><label data-i18n="TO_FUSION">Fusion-Audio</label><input type="number" id="to-fusion" min="1"></div>
+    <div class="form-row"><label data-i18n="TO_TIDEBUS">Gezeiten (Bus-Station)</label><input type="number" id="to-tidebus" min="1"></div>
+    <div class="form-row"><label data-i18n="TO_TIDEFC">Gezeiten (BSH-Vorhersage)</label><input type="number" id="to-tidefc" min="1"></div>
+    <div class="form-row"><label data-i18n="TO_BATTERY">Batteriebank</label><input type="number" id="to-battery" min="1"></div>
+    <div class="form-row"><label data-i18n="TO_TANK">Tank</label><input type="number" id="to-tank" min="1"></div>
+    <div class="form-row"><label data-i18n="TO_AIS">AIS-Ziel entfernen nach</label><input type="number" id="to-ais" min="1"></div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="saveDataTimeouts()" data-i18n="BTN_SAVE">Speichern</button>
+    </div>
+  </div>
 </div>
 
 <!-- ============ DEVICES: calibration + source selection ============ -->
@@ -689,6 +716,24 @@ F_GRID:'Raster',
 BTN_CREATE:'Anlegen',
 BTN_CANCEL:'Abbrechen',
 BTN_SAVE:'Speichern',
+TO_H:'Datenalter (erweitert)',
+TO_P:'Wie lange ein Wert seit seiner letzten Aktualisierung angezeigt wird, bevor er im Display ausgegraut wird. Wirkt sofort, kein Neustart nötig. Werte in Sekunden.',
+TO_GPS:'GPS (Position/SOG/COG/HDG)',
+TO_WIND:'Wind',
+TO_DEPTH:'Tiefe',
+TO_ENGINE:'Motor',
+TO_RUDDER:'Ruder',
+TO_ATTITUDE:'Lage (Roll/Pitch/Heave)',
+TO_ENV:'Umgebung (Temp/Druck)',
+TO_LOG:'Logge (Distanz)',
+TO_NAV:'Navigation (Wegpunkt)',
+TO_AUTOPILOT:'Autopilot',
+TO_FUSION:'Fusion-Audio',
+TO_TIDEBUS:'Gezeiten (Bus-Station)',
+TO_TIDEFC:'Gezeiten (BSH-Vorhersage)',
+TO_BATTERY:'Batteriebank',
+TO_TANK:'Tank',
+TO_AIS:'AIS-Ziel entfernen nach',
 DEMO_H:'Demo-Modus',
 DEMO_P:'Im Demo-Modus werden <strong>alle NMEA-Sensordaten durch animierte Simulationswerte ersetzt</strong> (kein CAN-Bus nötig). Das Display zeigt auf allen Bildschirmen eine blinkende Dauerwarnung.<br><span style="color:var(--warn);font-weight:600">Nur für Präsentationen und Tests – niemals während der Fahrt aktivieren!</span>',
 DEMO_EN_LBL:'Demo-Modus aktivieren',
@@ -1064,6 +1109,24 @@ F_GRID:'Grid',
 BTN_CREATE:'Create',
 BTN_CANCEL:'Cancel',
 BTN_SAVE:'Save',
+TO_H:'Data age (advanced)',
+TO_P:'How long a value is shown after its last update before the display dims it. Applies immediately, no restart needed. Values in seconds.',
+TO_GPS:'GPS (position/SOG/COG/HDG)',
+TO_WIND:'Wind',
+TO_DEPTH:'Depth',
+TO_ENGINE:'Engine',
+TO_RUDDER:'Rudder',
+TO_ATTITUDE:'Attitude (roll/pitch/heave)',
+TO_ENV:'Environment (temp/pressure)',
+TO_LOG:'Log (distance)',
+TO_NAV:'Navigation (waypoint)',
+TO_AUTOPILOT:'Autopilot',
+TO_FUSION:'Fusion audio',
+TO_TIDEBUS:'Tide (bus station)',
+TO_TIDEFC:'Tide (BSH forecast)',
+TO_BATTERY:'Battery bank',
+TO_TANK:'Tank',
+TO_AIS:'Remove AIS target after',
 DEMO_H:'Demo mode',
 DEMO_P:'In demo mode <strong>all NMEA sensor data is replaced by animated simulation values</strong> (no CAN bus required). The display shows a flashing permanent warning on every screen.<br><span style="color:var(--warn);font-weight:600">For demos and testing only – never enable while under way!</span>',
 DEMO_EN_LBL:'Enable demo mode',
@@ -1590,6 +1653,24 @@ function populateForm() {
   setVal('can-tx',       cfg.nmea2000?.can_tx??17);
   setVal('can-rx',       cfg.nmea2000?.can_rx??18);
   document.getElementById('can-listen').checked = cfg.nmea2000?.listen_only??false;
+  // Data-timeout thresholds (stored in ms, shown/edited in seconds)
+  const to = cfg.data_timeouts ?? {};
+  setVal('to-gps',       (to.gps??10000)/1000);
+  setVal('to-wind',      (to.wind??5000)/1000);
+  setVal('to-depth',     (to.depth??5000)/1000);
+  setVal('to-engine',    (to.engine??5000)/1000);
+  setVal('to-rudder',    (to.rudder??3000)/1000);
+  setVal('to-attitude',  (to.attitude??3000)/1000);
+  setVal('to-env',       (to.env??30000)/1000);
+  setVal('to-log',       (to.log??15000)/1000);
+  setVal('to-nav',       (to.nav??10000)/1000);
+  setVal('to-autopilot', (to.autopilot??3000)/1000);
+  setVal('to-fusion',    (to.fusion??15000)/1000);
+  setVal('to-tidebus',   (to.tide_bus??60000)/1000);
+  setVal('to-tidefc',    (to.tide_forecast??3600000)/1000);
+  setVal('to-battery',   (to.battery??20000)/1000);
+  setVal('to-tank',      (to.tank??30000)/1000);
+  setVal('to-ais',       (to.ais??300000)/1000);
   // Devices tab: calibration values + pinned sources
   setVal('cal-depth',  cfg.cal?.depth_off??0);
   setVal('cal-awa',    cfg.cal?.awa_off??0);
@@ -2364,6 +2445,19 @@ async function saveNmea() {
   const r = await postPatch(patch);
   if (r?.ok) { toast(t('TOAST_SAVED_RESTART')); setTimeout(()=>api('POST','/api/restart'),1500); }
   else toast(t('TOAST_ERROR'),true);
+}
+async function saveDataTimeouts() {
+  const patch = { data_timeouts:{
+    gps:+v('to-gps')*1000, wind:+v('to-wind')*1000, depth:+v('to-depth')*1000,
+    engine:+v('to-engine')*1000, rudder:+v('to-rudder')*1000, attitude:+v('to-attitude')*1000,
+    env:+v('to-env')*1000, log:+v('to-log')*1000, nav:+v('to-nav')*1000,
+    autopilot:+v('to-autopilot')*1000, fusion:+v('to-fusion')*1000,
+    tide_bus:+v('to-tidebus')*1000, tide_forecast:+v('to-tidefc')*1000,
+    battery:+v('to-battery')*1000, tank:+v('to-tank')*1000, ais:+v('to-ais')*1000,
+  }};
+  const r = await postPatch(patch);
+  if (r?.ok) toast(t('TOAST_SAVED'));
+  else toast(t('TOAST_ERROR'), true);
 }
 
 // ---- Devices tab: calibration + N2K source pinning ---------------------------

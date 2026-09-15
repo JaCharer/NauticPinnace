@@ -237,6 +237,26 @@ String Config::toJson() const {
     doc["nmea2000"]["udp_local_port"]  = cfg.n2kUdpLocalPort;
     doc["nmea2000"]["udp_remote_port"] = cfg.n2kUdpRemotePort;
 
+    {   // How old a value may get before the UI shows it as gone (see DataTimeouts).
+        JsonObject t = doc["data_timeouts"].to<JsonObject>();
+        t["gps"]           = cfg.dataTimeouts.gps;
+        t["wind"]          = cfg.dataTimeouts.wind;
+        t["depth"]         = cfg.dataTimeouts.depth;
+        t["engine"]        = cfg.dataTimeouts.engine;
+        t["rudder"]        = cfg.dataTimeouts.rudder;
+        t["attitude"]      = cfg.dataTimeouts.attitude;
+        t["env"]           = cfg.dataTimeouts.env;
+        t["log"]           = cfg.dataTimeouts.log;
+        t["nav"]           = cfg.dataTimeouts.nav;
+        t["autopilot"]     = cfg.dataTimeouts.autopilot;
+        t["fusion"]        = cfg.dataTimeouts.fusion;
+        t["tide_bus"]      = cfg.dataTimeouts.tideBus;
+        t["tide_forecast"] = cfg.dataTimeouts.tideForecast;
+        t["battery"]       = cfg.dataTimeouts.battery;
+        t["tank"]          = cfg.dataTimeouts.tank;
+        t["ais"]           = cfg.dataTimeouts.ais;
+    }
+
     doc["engine"]["rpm_idle"]     = cfg.engine.rpmIdle;
     doc["engine"]["rpm_cruise"]   = cfg.engine.rpmCruise;
     doc["engine"]["rpm_max_cont"] = cfg.engine.rpmMaxCont;
@@ -470,6 +490,26 @@ bool Config::fromJson(const String &json) {
     cfg.n2kUdpLocalPort  = doc["nmea2000"]["udp_local_port"]  | cfg.n2kUdpLocalPort;
     cfg.n2kUdpRemotePort = doc["nmea2000"]["udp_remote_port"] | cfg.n2kUdpRemotePort;
     strlcpy(cfg.n2kUdpRemoteIp, doc["nmea2000"]["udp_remote_ip"] | cfg.n2kUdpRemoteIp, sizeof(cfg.n2kUdpRemoteIp));
+
+    {
+        JsonObjectConst t = doc["data_timeouts"];
+        cfg.dataTimeouts.gps           = t["gps"]           | cfg.dataTimeouts.gps;
+        cfg.dataTimeouts.wind          = t["wind"]          | cfg.dataTimeouts.wind;
+        cfg.dataTimeouts.depth         = t["depth"]         | cfg.dataTimeouts.depth;
+        cfg.dataTimeouts.engine        = t["engine"]        | cfg.dataTimeouts.engine;
+        cfg.dataTimeouts.rudder        = t["rudder"]        | cfg.dataTimeouts.rudder;
+        cfg.dataTimeouts.attitude      = t["attitude"]      | cfg.dataTimeouts.attitude;
+        cfg.dataTimeouts.env           = t["env"]           | cfg.dataTimeouts.env;
+        cfg.dataTimeouts.log           = t["log"]           | cfg.dataTimeouts.log;
+        cfg.dataTimeouts.nav           = t["nav"]           | cfg.dataTimeouts.nav;
+        cfg.dataTimeouts.autopilot     = t["autopilot"]     | cfg.dataTimeouts.autopilot;
+        cfg.dataTimeouts.fusion        = t["fusion"]        | cfg.dataTimeouts.fusion;
+        cfg.dataTimeouts.tideBus       = t["tide_bus"]      | cfg.dataTimeouts.tideBus;
+        cfg.dataTimeouts.tideForecast  = t["tide_forecast"] | cfg.dataTimeouts.tideForecast;
+        cfg.dataTimeouts.battery       = t["battery"]       | cfg.dataTimeouts.battery;
+        cfg.dataTimeouts.tank          = t["tank"]          | cfg.dataTimeouts.tank;
+        cfg.dataTimeouts.ais           = t["ais"]           | cfg.dataTimeouts.ais;
+    }
 
     cfg.engine.rpmIdle    = doc["engine"]["rpm_idle"]     | cfg.engine.rpmIdle;
     cfg.engine.rpmCruise  = doc["engine"]["rpm_cruise"]   | cfg.engine.rpmCruise;

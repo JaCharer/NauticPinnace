@@ -100,8 +100,9 @@ void EngineScreen::onShow() {
 }
 
 void EngineScreen::update() {
-    float rpm;
-    { auto lk = data.lock(); rpm = data.rpm; }
+    float rpm; uint32_t lastEngineUpdate;
+    { auto lk = data.lock(); rpm = data.rpm; lastEngineUpdate = data.lastEngineUpdate; }
+    if (!dmFresh(lastEngineUpdate, appConfig.cfg.dataTimeouts.engine)) rpm = NAN;
     EngineConfig ec = appConfig.cfg.engine;
 
     // Arc colour zones based on RPM bands
@@ -137,10 +138,12 @@ void EngineScreen::update() {
         if (!_fields[i].val) continue;
         const GridCell &fc = appConfig.cfg.engineFields[i];
         float val = dmFieldByKey(fc.pgn);
+        const bool fresh = dmFieldFreshByKey(fc.pgn);
+        if (!fresh) val = NAN;
         fmtVal(buf, sizeof(buf), val, fc.decimals);
         lv_label_set_text(_fields[i].val, buf);
 
-        // Per-data-point alarm / stale colouring
+        // Per-data-point alarm / stale colouring (never received, or timed out)
         lv_color_t col = CLR_TEXT;
         if      (!strcmp(fc.pgn, "coolant") && !isnan(val) && val > UI_ENGINE_ALARM_COOL) col = CLR_RED;
         else if (!strcmp(fc.pgn, "oil")     && !isnan(val) && val < UI_ENGINE_ALARM_OIL)  col = CLR_RED;

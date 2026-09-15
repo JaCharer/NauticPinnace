@@ -235,13 +235,16 @@ void DepthScreen::update()
     float histBuf[DataModel::DEPTH_HIST];
     int   histIdx;
     bool  histFull;
+    uint32_t lastDepthUpdate;
     {
         auto lk = data.lock();
         depth    = data.depth;
+        lastDepthUpdate = data.lastDepthUpdate;
         histIdx  = data.depthHistIdx;
         histFull = data.depthHistFull;
         memcpy(histBuf, data.depthHistory, sizeof(histBuf));
     }
+    if (!dmFresh(lastDepthUpdate, appConfig.cfg.dataTimeouts.depth)) depth = NAN;
 
     bool useImp = (strcmp(appConfig.cfg.depthUnit, "ft") == 0);
     float dv = (!isnan(depth) && useImp) ? depth * FT_PER_M : depth;

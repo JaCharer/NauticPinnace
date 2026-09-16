@@ -429,6 +429,11 @@ void WindScreen::update() {
         auto lk = data.lock();
         twa = data.twa; awa = data.awa; tws = data.tws;
         stw = data.stw; hdg = data.hdg;
+        if (!dmFresh(data.lastTwaUpdate, appConfig.cfg.dataTimeouts.wind)) twa = NAN;
+        if (!dmFresh(data.lastAwaUpdate, appConfig.cfg.dataTimeouts.wind)) awa = NAN;
+        if (!dmFresh(data.lastTwsUpdate, appConfig.cfg.dataTimeouts.wind)) tws = NAN;
+        if (!dmFresh(data.lastStwUpdate, appConfig.cfg.dataTimeouts.gps)) stw = NAN;
+        if (!dmFresh(data.lastHdgUpdate, appConfig.cfg.dataTimeouts.gps)) hdg = NAN;
     }
     drawInstrument(twa, awa, tws, stw, hdg);
 }
@@ -513,6 +518,11 @@ void WindScreen::drawInstrument(float twa, float awa, float tws, float stw, floa
         rudder = data.rudderAngle;
         roll   = data.roll;  pitch = data.pitch;  rot = data.rateOfTurn;
         waveH  = data.waveHeight;  waveT = data.wavePeriod;
+        if (!dmFresh(data.lastRudderAngleUpdate, appConfig.cfg.dataTimeouts.rudder)) rudder = NAN;
+        if (!dmFresh(data.lastRollUpdate, appConfig.cfg.dataTimeouts.attitude)) roll = NAN;
+        if (!dmFresh(data.lastPitchUpdate, appConfig.cfg.dataTimeouts.attitude)) pitch = NAN;
+        if (!dmFresh(data.lastRateOfTurnUpdate, appConfig.cfg.dataTimeouts.attitude)) rot = NAN;
+        if (!dmFresh(data.lastHeaveUpdate, appConfig.cfg.dataTimeouts.attitude)) { waveH = NAN; waveT = NAN; }
     }
 
     // Sail state computed once, shared by all boat sub-layers
@@ -868,6 +878,7 @@ void WindScreen::drawBoat(const SailState &sail) {
     {
         auto lk = data.lock();
         float ra = data.rudderAngle;
+        if (!dmFresh(data.lastRudderAngleUpdate, appConfig.cfg.dataTimeouts.rudder)) ra = NAN;
         drawRudder(isnan(ra) ? 0.f : ra, ss);
     }
 }

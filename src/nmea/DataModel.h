@@ -52,6 +52,8 @@ struct TankInfo {
     uint8_t  fluidType  = 0xFF;   // tN2kFluidType (0=Fuel,1=Water,2=Gray,5=Black,…); 0xFF = empty
     float    level      = NAN;    // fill level [%]
     float    capacity   = NAN;    // tank capacity [litres]
+    uint32_t lastLevelUpdate = 0;
+    uint32_t lastCapacityUpdate = 0;
     uint32_t lastUpdate = 0;
 };
 
@@ -62,14 +64,18 @@ struct BatteryBank {
     float    soc         = NAN;   // state of charge [%]
     float    timeRemMin  = NAN;   // minutes to empty (discharging) or full (charging)
     float    temperature = NAN;   // °C
+    uint32_t lastVoltageUpdate = 0;
+    uint32_t lastCurrentUpdate = 0;
+    uint32_t lastSocUpdate = 0;
+    uint32_t lastTimeRemUpdate = 0;
+    uint32_t lastTemperatureUpdate = 0;
     uint32_t lastUpdate  = 0;
 };
 
-// Read-side "is this still fresh" check, shared by every screen that dims a
-// value once its category's lastXUpdate falls behind the configured timeout
-// (see Config.h's DataTimeouts). Deliberately NOT applied on the write side -
-// no background task ever forces a field back to NaN, so there is nothing to
-// race with the PGN handlers that set lastXUpdate.
+// Read-side "is this still fresh" check, shared by screens that invalidate a
+// value once its own timestamp falls behind the grouped timeout in DataTimeouts.
+// No background task forces fields back to NaN, so it cannot race with PGN
+// handlers writing values and timestamps.
 static inline bool dmFresh(uint32_t lastUpdate, uint32_t timeoutMs) {
     return lastUpdate != 0 && (millis() - lastUpdate) < timeoutMs;
 }
@@ -83,6 +89,13 @@ public:
     float hdg = NAN;        // magnetic heading [deg]
     float variation = NAN;  // magnetic variation [deg, E positive]
     float stw = NAN;        // speed through water [kn]
+    uint32_t lastLatUpdate = 0;
+    uint32_t lastLonUpdate = 0;
+    uint32_t lastSogUpdate = 0;
+    uint32_t lastCogUpdate = 0;
+    uint32_t lastHdgUpdate = 0;
+    uint32_t lastVariationUpdate = 0;
+    uint32_t lastStwUpdate = 0;
     uint32_t lastGpsUpdate = 0;
 
     // ---- Wind --------------------------------------------------------------
@@ -91,11 +104,17 @@ public:
     float twa = NAN;        // true wind angle [deg, -180..+180]
     float tws = NAN;        // true wind speed [kn]
     float twd = NAN;        // true wind direction [deg true]
+    uint32_t lastAwaUpdate = 0;
+    uint32_t lastAwsUpdate = 0;
+    uint32_t lastTwaUpdate = 0;
+    uint32_t lastTwsUpdate = 0;
+    uint32_t lastTwdUpdate = 0;
     uint32_t lastWindUpdate = 0;
 
     // ---- Depth -------------------------------------------------------------
     float depth = NAN;      // depth below transducer [m]
     float depthOffset = 0;  // + = to keel, - = to surface
+    uint32_t lastDepthOffsetUpdate = 0;
     uint32_t lastDepthUpdate = 0;
 
     // ---- Engine ------------------------------------------------------------
@@ -105,14 +124,22 @@ public:
     float engineHours    = NAN;   // h
     float fuelFlow       = NAN;   // L/h
     uint8_t engineInstance = 0;
+    uint32_t lastRpmUpdate = 0;
+    uint32_t lastOilPressureUpdate = 0;
+    uint32_t lastCoolantTempUpdate = 0;
+    uint32_t lastEngineHoursUpdate = 0;
+    uint32_t lastFuelFlowUpdate = 0;
     uint32_t lastEngineUpdate = 0;
 
     // ---- Electrical --------------------------------------------------------
     float batteryVoltage = NAN;   // V (house bank)
     float batteryCurrent = NAN;   // A
+    uint32_t lastBatteryVoltageUpdate = 0;
+    uint32_t lastBatteryCurrentUpdate = 0;
 
     // ---- Rudder ------------------------------------------------------------
     float rudderAngle = NAN;      // deg, positive = starboard
+    uint32_t lastRudderAngleUpdate = 0;
     uint32_t lastRudderUpdate = 0;
 
     // ---- Attitude / Motion (Precision-9: PGN 127257 / 127251 / 127252) -----
@@ -121,8 +148,12 @@ public:
     float yaw        = NAN;       // deg true (heading from the attitude sensor)
     float rateOfTurn = NAN;       // deg/min, + = turning to starboard
     float heave      = NAN;       // m, + = up (vertical wave-induced motion)
+    uint32_t lastRollUpdate = 0;
+    uint32_t lastPitchUpdate = 0;
+    uint32_t lastYawUpdate = 0;
+    uint32_t lastRateOfTurnUpdate = 0;
+    uint32_t lastHeaveUpdate = 0;
     uint32_t lastAttitudeUpdate = 0;
-    uint32_t lastHeaveUpdate    = 0;
     // Derived wave estimate from the heave signal (no direction):
     float waveHeight = NAN;       // m, peak-to-trough over a ~15 s window
     float wavePeriod = NAN;       // s, mean heave oscillation period
@@ -132,11 +163,17 @@ public:
     float waterTemp = NAN;        // sea water temperature [°C]
     float humidity  = NAN;        // relative humidity [%]
     float pressure  = NAN;        // barometric pressure [hPa]
+    uint32_t lastAirTempUpdate = 0;
+    uint32_t lastWaterTempUpdate = 0;
+    uint32_t lastHumidityUpdate = 0;
+    uint32_t lastPressureUpdate = 0;
     uint32_t lastEnvUpdate = 0;
 
     // ---- Distance log (PGN 128275) -----------------------------------------
     float logDistance  = NAN;     // total distance through the water [nm]
     float tripDistance = NAN;     // trip distance through the water [nm]
+    uint32_t lastLogDistanceUpdate = 0;
+    uint32_t lastTripDistanceUpdate = 0;
     uint32_t lastLogUpdate = 0;
 
     // ---- Time / date (PGN 126992 system time + 129033 local offset) --------
@@ -178,6 +215,10 @@ public:
     float    navBtw    = NAN;      // bearing to waypoint [deg true]
     float    navXte    = NAN;      // cross-track error [m] (+ = steer right)
     float    navVmc    = NAN;      // velocity made good toward the waypoint [kn]
+    uint32_t lastNavDtwUpdate = 0;
+    uint32_t lastNavBtwUpdate = 0;
+    uint32_t lastNavXteUpdate = 0;
+    uint32_t lastNavVmcUpdate = 0;
     uint32_t navWpNum  = 0;        // destination waypoint number
     uint32_t lastNavUpdate = 0;
 
@@ -185,6 +226,9 @@ public:
     float   apHeading       = NAN;  // current heading [deg]
     float   apTargetHeading = NAN;  // commanded heading [deg]
     float   apRudder        = NAN;  // commanded rudder [deg]
+    uint32_t lastApHeadingUpdate = 0;
+    uint32_t lastApTargetUpdate = 0;
+    uint32_t lastApRudderUpdate = 0;
     uint8_t apMode          = 0;    // 0=standby, 1=heading, 2=wind, 3=track
     bool    apEngaged       = false;
     uint32_t lastApUpdate   = 0;
@@ -341,41 +385,54 @@ public:
     void clearValues() {
         // ---- Navigation ----
         lat = lon = sog = cog = hdg = variation = stw = NAN;
+        lastLatUpdate = lastLonUpdate = lastSogUpdate = lastCogUpdate = 0;
+        lastHdgUpdate = lastVariationUpdate = lastStwUpdate = 0;
         lastGpsUpdate = 0;
 
         // ---- Wind ----
         awa = aws = twa = tws = twd = NAN;
+        lastAwaUpdate = lastAwsUpdate = lastTwaUpdate = lastTwsUpdate = 0;
+        lastTwdUpdate = 0;
         lastWindUpdate = 0;
 
         // ---- Depth ----
         depth = NAN;
         depthOffset = 0;
+        lastDepthOffsetUpdate = 0;
         lastDepthUpdate = 0;
 
         // ---- Engine ----
         rpm = oilPressure = coolantTemp = engineHours = fuelFlow = NAN;
         engineInstance = 0;
+        lastRpmUpdate = lastOilPressureUpdate = lastCoolantTempUpdate = 0;
+        lastEngineHoursUpdate = lastFuelFlowUpdate = 0;
         lastEngineUpdate = 0;
 
         // ---- Electrical ----
         batteryVoltage = batteryCurrent = NAN;
+        lastBatteryVoltageUpdate = lastBatteryCurrentUpdate = 0;
 
         // ---- Rudder ----
         rudderAngle = NAN;
+        lastRudderAngleUpdate = 0;
         lastRudderUpdate = 0;
 
         // ---- Attitude / motion ----
         roll = pitch = yaw = rateOfTurn = heave = NAN;
+        lastRollUpdate = lastPitchUpdate = lastYawUpdate = 0;
+        lastRateOfTurnUpdate = lastHeaveUpdate = 0;
         lastAttitudeUpdate = 0;
-        lastHeaveUpdate    = 0;
         waveHeight = wavePeriod = NAN;
 
         // ---- Environment ----
         airTemp = waterTemp = humidity = pressure = NAN;
+        lastAirTempUpdate = lastWaterTempUpdate = lastHumidityUpdate = 0;
+        lastPressureUpdate = 0;
         lastEnvUpdate = 0;
 
         // ---- Distance log ----
         logDistance = tripDistance = NAN;
+        lastLogDistanceUpdate = lastTripDistanceUpdate = 0;
         lastLogUpdate = 0;
 
         // ---- Time / date ----
@@ -402,11 +459,13 @@ public:
         // ---- Waypoint navigation ----
         navActive = false;
         navDtw = navBtw = navXte = navVmc = NAN;
+        lastNavDtwUpdate = lastNavBtwUpdate = lastNavXteUpdate = lastNavVmcUpdate = 0;
         navWpNum = 0;
         lastNavUpdate = 0;
 
         // ---- Autopilot ----
         apHeading = apTargetHeading = apRudder = NAN;
+        lastApHeadingUpdate = lastApTargetUpdate = lastApRudderUpdate = 0;
         apMode    = 0;
         apEngaged = false;
         lastApUpdate = 0;

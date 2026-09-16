@@ -208,9 +208,15 @@ void N2kHandler::onHeading(const tN2kMsg &msg) {
     double hdg, deviation, variation;
     if (!ParseN2kHeading(msg, SID, hdg, deviation, variation, ref)) return;
     auto lk = data.lock();
-    if (!N2kIsNA(hdg))
+    const uint32_t now = millis();
+    if (!N2kIsNA(hdg)) {
         data.hdg = calNorm360((float)RadToDeg(hdg) + appConfig.cfg.calHdgOffsetDeg);
-    if (!N2kIsNA(variation)) data.variation = (float)RadToDeg(variation);
+        data.lastHdgUpdate = now;
+    }
+    if (!N2kIsNA(variation)) {
+        data.variation = (float)RadToDeg(variation);
+        data.lastVariationUpdate = now;
+    }
 }
 
 void N2kHandler::onRudder(const tN2kMsg &msg) {
@@ -223,7 +229,9 @@ void N2kHandler::onRudder(const tN2kMsg &msg) {
         // Zero-point then optional sense inversion (sensor mounted mirrored).
         float a = (float)RadToDeg(angle) - appConfig.cfg.calRudderZeroDeg;
         data.rudderAngle = appConfig.cfg.calRudderInvert ? -a : a;
-        data.lastRudderUpdate = millis();
+        const uint32_t now = millis();
+        data.lastRudderAngleUpdate = now;
+        data.lastRudderUpdate = now;
     }
 }
 
@@ -234,10 +242,24 @@ void N2kHandler::onAttitude(const tN2kMsg &msg) {       // PGN 127257
     double yaw, pitch, roll;
     if (!ParseN2kAttitude(msg, SID, yaw, pitch, roll)) return;
     auto lk = data.lock();
-    if (!N2kIsNA(yaw))   data.yaw   = fmodf((float)RadToDeg(yaw) + 360.f, 360.f);
-    if (!N2kIsNA(pitch)) data.pitch = (float)RadToDeg(pitch) - appConfig.cfg.calPitchZeroDeg;
-    if (!N2kIsNA(roll))  data.roll  = (float)RadToDeg(roll)  - appConfig.cfg.calRollZeroDeg;
-    data.lastAttitudeUpdate = millis();
+    const uint32_t now = millis();
+    bool updated = false;
+    if (!N2kIsNA(yaw)) {
+        data.yaw = fmodf((float)RadToDeg(yaw) + 360.f, 360.f);
+        data.lastYawUpdate = now;
+        updated = true;
+    }
+    if (!N2kIsNA(pitch)) {
+        data.pitch = (float)RadToDeg(pitch) - appConfig.cfg.calPitchZeroDeg;
+        data.lastPitchUpdate = now;
+        updated = true;
+    }
+    if (!N2kIsNA(roll)) {
+        data.roll = (float)RadToDeg(roll) - appConfig.cfg.calRollZeroDeg;
+        data.lastRollUpdate = now;
+        updated = true;
+    }
+    if (updated) data.lastAttitudeUpdate = now;
 }
 
 void N2kHandler::onRateOfTurn(const tN2kMsg &msg) {     // PGN 127251
@@ -245,7 +267,12 @@ void N2kHandler::onRateOfTurn(const tN2kMsg &msg) {     // PGN 127251
     double rot;
     if (!ParseN2kRateOfTurn(msg, SID, rot)) return;
     auto lk = data.lock();
-    if (!N2kIsNA(rot)) data.rateOfTurn = (float)RadToDeg(rot) * 60.0f;  // rad/s -> deg/min
+    if (!N2kIsNA(rot)) {
+        data.rateOfTurn = (float)RadToDeg(rot) * 60.0f;  // rad/s -> deg/min
+        const uint32_t now = millis();
+        data.lastRateOfTurnUpdate = now;
+        data.lastAttitudeUpdate = now;
+    }
 }
 
 void N2kHandler::onHeave(const tN2kMsg &msg) {          // PGN 127252
@@ -255,8 +282,10 @@ void N2kHandler::onHeave(const tN2kMsg &msg) {          // PGN 127252
     auto lk = data.lock();
     if (!N2kIsNA(heave)) {
         data.heave = (float)heave;
-        data.lastHeaveUpdate = millis();
-        data.pushHeaveSample((float)heave, millis());   // lock held; helper is lock-free
+        const uint32_t now = millis();
+        data.lastHeaveUpdate = now;
+        data.lastAttitudeUpdate = now;
+        data.pushHeaveSample((float)heave, now);   // lock held; helper is lock-free
     }
 }
 
@@ -269,9 +298,19 @@ void N2kHandler::onFluidLevel(const tN2kMsg &msg) {     // PGN 127505
     auto lk = data.lock();
     TankInfo *t = data.findOrCreateTank(instance, (uint8_t)ft);
     if (!t) return;
-    if (!N2kIsNA(level))    t->level    = (float)level;
-    if (!N2kIsNA(capacity)) t->capacity = (float)capacity;
-    t->lastUpdate = millis();
+    const uint32_t now = millis();
+    bool updated = false;
+    if (!N2kIsNA(level)) {
+        t->level = (float)level;
+        t->lastLevelUpdate = now;
+        updated = true;
+    }
+    if (!N2kIsNA(capacity)) {
+        t->capacity = (float)capacity;
+        t->lastCapacityUpdate = now;
+        updated = true;
+    }
+    if (updated) t->lastUpdate = now;
 }
 
 void N2kHandler::onOutsideEnv(const tN2kMsg &msg) {     // PGN 130310
@@ -280,11 +319,17 @@ void N2kHandler::onOutsideEnv(const tN2kMsg &msg) {     // PGN 130310
     double waterT, airT, press;
     if (!ParseN2kOutsideEnvironmentalParameters(msg, SID, waterT, airT, press)) return;
     auto lk = data.lock();
-    if (!N2kIsNA(waterT)) data.waterTemp = (float)(waterT - 273.15) + appConfig.cfg.calWaterTempOffC;
-    if (!N2kIsNA(airT))   data.airTemp   = (float)(airT   - 273.15);
-    if (!N2kIsNA(press))  { data.pressure = (float)(press / 100.0) + appConfig.cfg.calPressureOffHpa;
-                            data.pushPressureSample(data.pressure, millis()); }
-    data.lastEnvUpdate = millis();
+    const uint32_t now = millis();
+    bool updated = false;
+    if (!N2kIsNA(waterT)) { data.waterTemp = (float)(waterT - 273.15) + appConfig.cfg.calWaterTempOffC; data.lastWaterTempUpdate = now; updated = true; }
+    if (!N2kIsNA(airT)) { data.airTemp = (float)(airT - 273.15); data.lastAirTempUpdate = now; updated = true; }
+    if (!N2kIsNA(press)) {
+        data.pressure = (float)(press / 100.0) + appConfig.cfg.calPressureOffHpa;
+        data.lastPressureUpdate = now;
+        data.pushPressureSample(data.pressure, now);
+        updated = true;
+    }
+    if (updated) data.lastEnvUpdate = now;
 }
 
 void N2kHandler::onEnvParams(const tN2kMsg &msg) {     // PGN 130311
@@ -295,15 +340,22 @@ void N2kHandler::onEnvParams(const tN2kMsg &msg) {     // PGN 130311
     double temp, humid, press;
     if (!ParseN2kEnvironmentalParameters(msg, SID, ts, temp, hs, humid, press)) return;
     auto lk = data.lock();
+    const uint32_t now = millis();
+    bool updated = false;
     if (!N2kIsNA(temp)) {
         float c = (float)(temp - 273.15);
-        if (ts == N2kts_SeaTemperature) data.waterTemp = c + appConfig.cfg.calWaterTempOffC;
-        else                            data.airTemp   = c;
+        if (ts == N2kts_SeaTemperature) { data.waterTemp = c + appConfig.cfg.calWaterTempOffC; data.lastWaterTempUpdate = now; }
+        else { data.airTemp = c; data.lastAirTempUpdate = now; }
+        updated = true;
     }
-    if (!N2kIsNA(humid)) data.humidity = (float)humid;
-    if (!N2kIsNA(press)) { data.pressure = (float)(press / 100.0) + appConfig.cfg.calPressureOffHpa;
-                           data.pushPressureSample(data.pressure, millis()); }
-    data.lastEnvUpdate = millis();
+    if (!N2kIsNA(humid)) { data.humidity = (float)humid; data.lastHumidityUpdate = now; updated = true; }
+    if (!N2kIsNA(press)) {
+        data.pressure = (float)(press / 100.0) + appConfig.cfg.calPressureOffHpa;
+        data.lastPressureUpdate = now;
+        data.pushPressureSample(data.pressure, now);
+        updated = true;
+    }
+    if (updated) data.lastEnvUpdate = now;
 }
 
 void N2kHandler::onPressure(const tN2kMsg &msg) {       // PGN 130314
@@ -315,8 +367,9 @@ void N2kHandler::onPressure(const tN2kMsg &msg) {       // PGN 130314
     if (!srcGate(N2K_SRC_ENV, msg, appConfig.cfg.srcEnv)) return;
     auto lk = data.lock();
     if (!N2kIsNA(press)) { data.pressure = (float)(press / 100.0) + appConfig.cfg.calPressureOffHpa;
-                           data.pushPressureSample(data.pressure, millis()); }
-    data.lastEnvUpdate = millis();
+                           data.lastPressureUpdate = millis();
+                           data.pushPressureSample(data.pressure, data.lastPressureUpdate); }
+    if (!N2kIsNA(press)) data.lastEnvUpdate = data.lastPressureUpdate;
 }
 
 void N2kHandler::onSystemTime(const tN2kMsg &msg) {    // PGN 126992
@@ -355,8 +408,11 @@ void N2kHandler::onXte(const tN2kMsg &msg) {           // PGN 129283
     double xte;
     if (!ParseN2kXTE(msg, SID, mode, navTerm, xte)) return;
     auto lk = data.lock();
-    if (!N2kIsNA(xte)) data.navXte = (float)xte;     // metres
-    data.lastNavUpdate = millis();
+    if (!N2kIsNA(xte)) {
+        data.navXte = (float)xte;     // metres
+        data.lastNavXteUpdate = millis();
+        data.lastNavUpdate = data.lastNavXteUpdate;
+    }
 }
 
 void N2kHandler::onNavInfo(const tN2kMsg &msg) {      // PGN 129284
@@ -370,12 +426,14 @@ void N2kHandler::onNavInfo(const tN2kMsg &msg) {      // PGN 129284
     if (!ParseN2kNavigationInfo(msg, SID, dtw, brgRef, perpCrossed, arrived, calcType,
             etaTime, etaDate, brgOrig, brgPos, originWp, destWp, destLat, destLon, vmc)) return;
     auto lk = data.lock();
-    if (!N2kIsNA(dtw)) data.navDtw = (float)(dtw / 1852.0);          // m → nm
-    if (!N2kIsNA(brgPos)) data.navBtw = (float)RadToDeg(brgPos);
-    if (!N2kIsNA(vmc)) data.navVmc = (float)(vmc / 0.5144);          // m/s → kn
+        const uint32_t now = millis();
+        bool updated = false;
+        if (!N2kIsNA(dtw)) { data.navDtw = (float)(dtw / 1852.0); data.lastNavDtwUpdate = now; updated = true; }          // m -> nm
+        if (!N2kIsNA(brgPos)) { data.navBtw = (float)RadToDeg(brgPos); data.lastNavBtwUpdate = now; updated = true; }
+        if (!N2kIsNA(vmc)) { data.navVmc = (float)(vmc / 0.5144); data.lastNavVmcUpdate = now; updated = true; }          // m/s -> kn
     if (destWp != 0xFFFFFFFF) data.navWpNum = destWp;
     data.navActive = true;
-    data.lastNavUpdate = millis();
+        if (updated) data.lastNavUpdate = now;
 }
 
 void N2kHandler::onMagVariation(const tN2kMsg &msg) {   // PGN 127258
@@ -384,15 +442,18 @@ void N2kHandler::onMagVariation(const tN2kMsg &msg) {   // PGN 127258
     if (N2kIsNA(var)) return;
     auto lk = data.lock();
     data.variation = (float)RadToDeg(var);
+    data.lastVariationUpdate = millis();
 }
 
 void N2kHandler::onDistanceLog(const tN2kMsg &msg) {   // PGN 128275
     uint16_t days; double sec; uint32_t log, trip;
     if (!ParseN2kDistanceLog(msg, days, sec, log, trip)) return;
     auto lk = data.lock();
-    if (log  != N2kUInt32NA) data.logDistance  = (float)(log  / 1852.0);   // m → nm
-    if (trip != N2kUInt32NA) data.tripDistance = (float)(trip / 1852.0);
-    data.lastLogUpdate = millis();
+    const uint32_t now = millis();
+    bool updated = false;
+    if (log != N2kUInt32NA) { data.logDistance = (float)(log / 1852.0); data.lastLogDistanceUpdate = now; updated = true; }   // m -> nm
+    if (trip != N2kUInt32NA) { data.tripDistance = (float)(trip / 1852.0); data.lastTripDistanceUpdate = now; updated = true; }
+    if (updated) data.lastLogUpdate = now;
 }
 
 void N2kHandler::onTempExt(const tN2kMsg &msg) {       // PGN 130312
@@ -402,9 +463,16 @@ void N2kHandler::onTempExt(const tN2kMsg &msg) {       // PGN 130312
     if (N2kIsNA(actual)) return;
     float c = (float)(actual - 273.15);                 // K → °C
     auto lk = data.lock();
-    if      (src == N2kts_SeaTemperature)     { data.waterTemp = c + appConfig.cfg.calWaterTempOffC;
-                                                data.lastEnvUpdate = millis(); }
-    else if (src == N2kts_OutsideTemperature) { data.airTemp   = c; data.lastEnvUpdate = millis(); }
+    const uint32_t now = millis();
+    if (src == N2kts_SeaTemperature) {
+        data.waterTemp = c + appConfig.cfg.calWaterTempOffC;
+        data.lastWaterTempUpdate = now;
+        data.lastEnvUpdate = now;
+    } else if (src == N2kts_OutsideTemperature) {
+        data.airTemp = c;
+        data.lastAirTempUpdate = now;
+        data.lastEnvUpdate = now;
+    }
 }
 
 // PGN 130320 Tide Station Data. The NMEA2000 library has no parser for this
@@ -450,7 +518,9 @@ void N2kHandler::onEngineRapid(const tN2kMsg &msg) {
     data.engineInstance = instance;
     if (!N2kIsNA(rpm)) {
         data.rpm = (float)rpm;
-        data.lastEngineUpdate = millis();
+        const uint32_t now = millis();
+        data.lastRpmUpdate = now;
+        data.lastEngineUpdate = now;
     }
 }
 
@@ -472,16 +542,13 @@ void N2kHandler::onEngineDynamic(const tN2kMsg &msg) {
     // hours ("h"). Without this conversion an engine with 1287 h showed the value
     // 4633200.
     if (!N2kIsNA(hours))       data.engineHours  = (float)(hours / 3600.0);     // s→h
-    // BUG FIXED: this handler never touched lastEngineUpdate, yet oil/coolant/
-    // fuel/hours share that ONE timestamp with rpm (see DataTimeouts::engine +
-    // dmFieldFreshByKey in DemoData.cpp) - so their on-screen freshness was
-    // governed entirely by how often PGN 127488 (Rapid, RPM-only) arrived, not
-    // by this PGN (127489, Dynamic) at all. On gateways/ECUs where the two
-    // PGNs run at different, jittery rates that made the whole engine card
-    // flicker "gone" and back every few seconds even while both PGNs kept
-    // arriving. Any 127489 frame now also counts as "the engine category is
-    // alive", same as onOutsideEnv/onEnvParams already do for lastEnvUpdate.
-    data.lastEngineUpdate = millis();
+    const uint32_t now = millis();
+    bool updated = false;
+    if (!N2kIsNA(oilPress)) { data.lastOilPressureUpdate = now; updated = true; }
+    if (!N2kIsNA(coolantTemp)) { data.lastCoolantTempUpdate = now; updated = true; }
+    if (!N2kIsNA(fuelRate)) { data.lastFuelFlowUpdate = now; updated = true; }
+    if (!N2kIsNA(hours)) { data.lastEngineHoursUpdate = now; updated = true; }
+    if (updated) data.lastEngineUpdate = now;
 }
 
 void N2kHandler::onBattery(const tN2kMsg &msg) {
@@ -492,14 +559,17 @@ void N2kHandler::onBattery(const tN2kMsg &msg) {
     auto lk = data.lock();
     BatteryBank *b = data.findOrCreateBattery(instance);
     if (b) {
-        if (!N2kIsNA(voltage))     b->voltage     = (float)voltage;
-        if (!N2kIsNA(current))     b->current     = (float)current;       // + = charging
-        if (!N2kIsNA(temperature)) b->temperature = (float)(temperature - 273.15f);
-        b->lastUpdate = millis();
+        const uint32_t now = millis();
+        bool updated = false;
+        if (!N2kIsNA(voltage)) { b->voltage = (float)voltage; b->lastVoltageUpdate = now; updated = true; }
+        if (!N2kIsNA(current)) { b->current = (float)current; b->lastCurrentUpdate = now; updated = true; } // + = charging
+        if (!N2kIsNA(temperature)) { b->temperature = (float)(temperature - 273.15f); b->lastTemperatureUpdate = now; updated = true; }
+        if (updated) b->lastUpdate = now;
     }
     if (instance == 0) {  // keep legacy single-bank fields (grid "battv", etc.)
-        if (!N2kIsNA(voltage)) data.batteryVoltage = (float)voltage;
-        if (!N2kIsNA(current)) data.batteryCurrent = (float)current;
+        const uint32_t now = millis();
+        if (!N2kIsNA(voltage)) { data.batteryVoltage = (float)voltage; data.lastBatteryVoltageUpdate = now; }
+        if (!N2kIsNA(current)) { data.batteryCurrent = (float)current; data.lastBatteryCurrentUpdate = now; }
     }
 }
 
@@ -511,9 +581,19 @@ void N2kHandler::onDcStatus(const tN2kMsg &msg) {       // PGN 127506
     auto lk = data.lock();
     BatteryBank *b = data.findOrCreateBattery(inst);
     if (!b) return;
-    if (soc != 0xFF && soc <= 100) b->soc = (float)soc;             // 0xFF = N/A
-    if (!N2kIsNA(timeRem))         b->timeRemMin = (float)(timeRem / 60.0);  // s → min
-    b->lastUpdate = millis();
+    const uint32_t now = millis();
+    bool updated = false;
+    if (soc != 0xFF && soc <= 100) {
+        b->soc = (float)soc;             // 0xFF = N/A
+        b->lastSocUpdate = now;
+        updated = true;
+    }
+    if (!N2kIsNA(timeRem)) {
+        b->timeRemMin = (float)(timeRem / 60.0);  // s -> min
+        b->lastTimeRemUpdate = now;
+        updated = true;
+    }
+    if (updated) b->lastUpdate = now;
 }
 
 void N2kHandler::onSpeed(const tN2kMsg &msg) {
@@ -523,9 +603,13 @@ void N2kHandler::onSpeed(const tN2kMsg &msg) {
     tN2kSpeedWaterReferenceType type;
     if (!ParseN2kBoatSpeed(msg, SID, waterRef, groundRef, type)) return;
     auto lk = data.lock();
-    if (!N2kIsNA(waterRef))
+    if (!N2kIsNA(waterRef)) {
         data.stw = (float)(waterRef / 0.5144f)                    // m/s → kn
                    * (appConfig.cfg.calStwFactorPct / 100.0f);    // paddle-wheel cal
+        const uint32_t now = millis();
+        data.lastStwUpdate = now;
+        data.lastGpsUpdate = now;
+    }
 }
 
 void N2kHandler::onDepth(const tN2kMsg &msg) {
@@ -539,8 +623,10 @@ void N2kHandler::onDepth(const tN2kMsg &msg) {
         float d = (float)depth + appConfig.cfg.calDepthOffsetM;
         data.depth = d < 0.f ? 0.f : d;
         if (!N2kIsNA(offset)) data.depthOffset = (float)offset;
+        const uint32_t now = millis();
         data.pushDepthSample(data.depth);
-        data.lastDepthUpdate = millis();
+        data.lastDepthUpdate = now;
+        if (!N2kIsNA(offset)) data.lastDepthOffsetUpdate = now;
     }
 }
 
@@ -549,9 +635,11 @@ void N2kHandler::onPositionRapid(const tN2kMsg &msg) {
     double lat, lon;
     if (!ParseN2kPGN129025(msg, lat, lon)) return;
     auto lk = data.lock();
-    if (!N2kIsNA(lat)) data.lat = (float)lat;
-    if (!N2kIsNA(lon)) data.lon = (float)lon;
-    data.lastGpsUpdate = millis();
+    const uint32_t now = millis();
+    bool updated = false;
+    if (!N2kIsNA(lat)) { data.lat = (float)lat; data.lastLatUpdate = now; updated = true; }
+    if (!N2kIsNA(lon)) { data.lon = (float)lon; data.lastLonUpdate = now; updated = true; }
+    if (updated) data.lastGpsUpdate = now;
 }
 
 void N2kHandler::onCogSog(const tN2kMsg &msg) {
@@ -561,8 +649,11 @@ void N2kHandler::onCogSog(const tN2kMsg &msg) {
     double cog, sog;
     if (!ParseN2kCOGSOGRapid(msg, SID, ref, cog, sog)) return;
     auto lk = data.lock();
-    if (!N2kIsNA(cog)) data.cog = (float)RadToDeg(cog);
-    if (!N2kIsNA(sog)) data.sog = (float)(sog / 0.5144f); // m/s → kn
+    const uint32_t now = millis();
+    bool updated = false;
+    if (!N2kIsNA(cog)) { data.cog = (float)RadToDeg(cog); data.lastCogUpdate = now; updated = true; }
+    if (!N2kIsNA(sog)) { data.sog = (float)(sog / 0.5144f); data.lastSogUpdate = now; updated = true; } // m/s → kn
+    if (updated) data.lastGpsUpdate = now;
 }
 
 void N2kHandler::onGnss(const tN2kMsg &msg) {
@@ -592,10 +683,12 @@ void N2kHandler::onGnss(const tN2kMsg &msg) {
             refStations, refStationType, refStationId,
             ageOfCorrection)) return;
     auto lk = data.lock();
-    if (!N2kIsNA(lat)) data.lat = (float)lat;
-    if (!N2kIsNA(lon)) data.lon = (float)lon;
+    const uint32_t now = millis();
+    bool updated = false;
+    if (!N2kIsNA(lat)) { data.lat = (float)lat; data.lastLatUpdate = now; updated = true; }
+    if (!N2kIsNA(lon)) { data.lon = (float)lon; data.lastLonUpdate = now; updated = true; }
     // Magnetic variation comes from PGN 127258 (onMagVariation) — deliberately nothing here.
-    data.lastGpsUpdate = millis();
+    if (updated) data.lastGpsUpdate = now;
 }
 
 void N2kHandler::onWind(const tN2kMsg &msg) {
@@ -610,13 +703,23 @@ void N2kHandler::onWind(const tN2kMsg &msg) {
     while (angDeg >  180) angDeg -= 360;
     while (angDeg < -180) angDeg += 360;
     auto lk = data.lock();
+    const uint32_t now = millis();
+    bool updated = false;
     switch (ref) {
         case N2kWind_Apparent:
             // Vane rotation + anemometer scale apply to the APPARENT wind
             // only - the sensor measures apparent; true wind derived from it
             // (by us or by the sender) inherits the correction naturally.
-            data.aws = spKn * (appConfig.cfg.calAwsFactorPct / 100.0f);
-            data.awa = calNorm180(angDeg + appConfig.cfg.calAwaOffsetDeg);
+            if (!N2kIsNA(speed)) {
+                data.aws = spKn * (appConfig.cfg.calAwsFactorPct / 100.0f);
+                data.lastAwsUpdate = now;
+                updated = true;
+            }
+            if (!N2kIsNA(angle)) {
+                data.awa = calNorm180(angDeg + appConfig.cfg.calAwaOffsetDeg);
+                data.lastAwaUpdate = now;
+                updated = true;
+            }
             break;
         // True wind referenced to the vessel's axis. Accept BOTH references:
         // 4 = over water (Heading/STW), 3 = over ground (COG/SOG). Reference 3
@@ -624,16 +727,32 @@ void N2kHandler::onWind(const tN2kMsg &msg) {
         // but devices and simulators frequently send TWA/TWS exactly that way.
         case N2kWind_True_water:
         case N2kWind_True_boat:
-            data.tws = spKn;
-            data.twa = angDeg;
+            if (!N2kIsNA(speed)) {
+                data.tws = spKn;
+                data.lastTwsUpdate = now;
+                updated = true;
+            }
+            if (!N2kIsNA(angle)) {
+                data.twa = angDeg;
+                data.lastTwaUpdate = now;
+                updated = true;
+            }
             break;
         case N2kWind_True_North:
-            data.tws = spKn;
-            data.twd = fmod(angDeg + 360, 360);
+            if (!N2kIsNA(speed)) {
+                data.tws = spKn;
+                data.lastTwsUpdate = now;
+                updated = true;
+            }
+            if (!N2kIsNA(angle)) {
+                data.twd = fmod(angDeg + 360, 360);
+                data.lastTwdUpdate = now;
+                updated = true;
+            }
             break;
         default: break;
     }
-    data.lastWindUpdate = millis();
+    if (updated) data.lastWindUpdate = now;
     if (!isnan(data.twd)) data.pushWindSample(data.twd, data.tws);
 }
 
@@ -750,9 +869,14 @@ void N2kHandler::onHeadingTrack(const tN2kMsg &msg) {
             steerMode, turnMode, hdgRef, rudDir, cmdRudder, cmdHeading, track,
             rudLimit, offHdgLimit, radiusOrder, rotOrder, offTrkLimit, vesselHeading))
         return;
-    if (!N2kIsNA(cmdRudder)) data.apRudder = (float)RadToDeg(cmdRudder);
+    const uint32_t now = millis();
+    if (!N2kIsNA(cmdRudder)) {
+        data.apRudder = (float)RadToDeg(cmdRudder);
+        data.lastApRudderUpdate = now;
+    }
     if (!N2kIsNA(cmdHeading)) {
         data.apTargetHeading = (float)RadToDeg(cmdHeading);
-        data.lastApUpdate = millis();
+        data.lastApTargetUpdate = now;
+        data.lastApUpdate = now;
     }
 }

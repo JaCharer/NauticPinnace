@@ -60,37 +60,42 @@ float dmFieldByKey(const char *key) {
 }
 
 // Sibling of dmFieldByKey(): is the category behind this key still within its
-// configured timeout (Config.h's DataTimeouts)? Grouped the same way the
-// underlying lastXUpdate timestamps are grouped in DataModel - see the
-// comment there. Keys with no meaningful staleness concept (device-local
-// "cpu"/"ram", or "battv" which predates per-bank timestamps) are always
-// reported fresh; GridScreen/EngineScreen/SideBar combine this with isnan().
+// configured group timeout (Config.h's DataTimeouts)? The value timestamp is
+// individual even though the timeout is shared by its group. Device-local
+// "cpu"/"ram" have no meaningful staleness concept and are always fresh.
 bool dmFieldFreshByKey(const char *key) {
     const DataTimeouts &to = appConfig.cfg.dataTimeouts;
     auto lk = data.lock();
-    if (!strcmp(key,"sog") || !strcmp(key,"cog") || !strcmp(key,"hdg") ||
-        !strcmp(key,"stw") || !strcmp(key,"lat") || !strcmp(key,"lon") ||
-        !strcmp(key,"variation"))
-        return dmFresh(data.lastGpsUpdate, to.gps);
-    if (!strcmp(key,"awa") || !strcmp(key,"aws") || !strcmp(key,"twa") ||
-        !strcmp(key,"tws") || !strcmp(key,"twd"))
-        return dmFresh(data.lastWindUpdate, to.wind);
-    if (!strcmp(key,"depth"))
-        return dmFresh(data.lastDepthUpdate, to.depth);
-    if (!strcmp(key,"rpm") || !strcmp(key,"oil") || !strcmp(key,"coolant") ||
-        !strcmp(key,"hours") || !strcmp(key,"fuel"))
-        return dmFresh(data.lastEngineUpdate, to.engine);
-    if (!strcmp(key,"rudder"))
-        return dmFresh(data.lastRudderUpdate, to.rudder);
-    if (!strcmp(key,"roll") || !strcmp(key,"pitch") || !strcmp(key,"yaw") || !strcmp(key,"rot"))
-        return dmFresh(data.lastAttitudeUpdate, to.attitude);
-    if (!strcmp(key,"heave") || !strcmp(key,"waveht") || !strcmp(key,"waveper"))
-        return dmFresh(data.lastHeaveUpdate, to.attitude);
-    if (!strcmp(key,"aptarget"))
-        return dmFresh(data.lastApUpdate, to.autopilot);
-    if (!strcmp(key,"log") || !strcmp(key,"trip"))
-        return dmFresh(data.lastLogUpdate, to.log);
-    return true;   // "battv", "cpu", "ram": no per-category timestamp to check
+    if (!strcmp(key,"sog")) return dmFresh(data.lastSogUpdate, to.gps);
+    if (!strcmp(key,"cog")) return dmFresh(data.lastCogUpdate, to.gps);
+    if (!strcmp(key,"hdg")) return dmFresh(data.lastHdgUpdate, to.gps);
+    if (!strcmp(key,"stw")) return dmFresh(data.lastStwUpdate, to.gps);
+    if (!strcmp(key,"lat")) return dmFresh(data.lastLatUpdate, to.gps);
+    if (!strcmp(key,"lon")) return dmFresh(data.lastLonUpdate, to.gps);
+    if (!strcmp(key,"variation")) return dmFresh(data.lastVariationUpdate, to.gps);
+    if (!strcmp(key,"awa")) return dmFresh(data.lastAwaUpdate, to.wind);
+    if (!strcmp(key,"aws")) return dmFresh(data.lastAwsUpdate, to.wind);
+    if (!strcmp(key,"twa")) return dmFresh(data.lastTwaUpdate, to.wind);
+    if (!strcmp(key,"tws")) return dmFresh(data.lastTwsUpdate, to.wind);
+    if (!strcmp(key,"twd")) return dmFresh(data.lastTwdUpdate, to.wind);
+    if (!strcmp(key,"depth")) return dmFresh(data.lastDepthUpdate, to.depth);
+    if (!strcmp(key,"rpm")) return dmFresh(data.lastRpmUpdate, to.engine);
+    if (!strcmp(key,"oil")) return dmFresh(data.lastOilPressureUpdate, to.engine);
+    if (!strcmp(key,"coolant")) return dmFresh(data.lastCoolantTempUpdate, to.engine);
+    if (!strcmp(key,"hours")) return dmFresh(data.lastEngineHoursUpdate, to.engine);
+    if (!strcmp(key,"fuel")) return dmFresh(data.lastFuelFlowUpdate, to.engine);
+    if (!strcmp(key,"rudder")) return dmFresh(data.lastRudderAngleUpdate, to.rudder);
+    if (!strcmp(key,"roll")) return dmFresh(data.lastRollUpdate, to.attitude);
+    if (!strcmp(key,"pitch")) return dmFresh(data.lastPitchUpdate, to.attitude);
+    if (!strcmp(key,"yaw")) return dmFresh(data.lastYawUpdate, to.attitude);
+    if (!strcmp(key,"rot")) return dmFresh(data.lastRateOfTurnUpdate, to.attitude);
+    if (!strcmp(key,"heave")) return dmFresh(data.lastHeaveUpdate, to.attitude);
+    if (!strcmp(key,"waveht") || !strcmp(key,"waveper")) return dmFresh(data.lastHeaveUpdate, to.attitude);
+    if (!strcmp(key,"aptarget")) return dmFresh(data.lastApTargetUpdate, to.autopilot);
+    if (!strcmp(key,"log")) return dmFresh(data.lastLogDistanceUpdate, to.log);
+    if (!strcmp(key,"trip")) return dmFresh(data.lastTripDistanceUpdate, to.log);
+    if (!strcmp(key,"battv")) return dmFresh(data.lastBatteryVoltageUpdate, to.battery);
+    return true;   // "cpu" and "ram" are device-local values
 }
 
 
@@ -220,9 +225,17 @@ void DemoDataSource::tick() {
         data.sog  = sog;
         data.cog  = cog;
         data.hdg  = hdg;
+        data.lastAwaUpdate = data.lastAwsUpdate = data.lastTwaUpdate = now;
+        data.lastTwsUpdate = data.lastTwdUpdate = now;
+        data.lastStwUpdate = data.lastSogUpdate = data.lastCogUpdate = now;
+        data.lastHdgUpdate = now;
+        data.lastWindUpdate = data.lastGpsUpdate = now;
         data.depth      = depth;
+        data.lastDepthUpdate = now;
         data.rudderAngle = rudder;
+        data.lastRudderAngleUpdate = data.lastRudderUpdate = now;
         data.batteryVoltage = battV;
+        data.lastBatteryVoltageUpdate = now;
         // Gentle anchor-swing wander (~±18 m, elliptical) so the Ankerwache shows
         // a realistic swing in demo mode; also keeps the GPS fix "fresh".
         {
@@ -230,6 +243,7 @@ void DemoDataSource::tick() {
             float wE = 18.f * sinf(t * 2.f * PI_F / 95.f + 1.f);
             data.lat = OWN_LAT + wN / (60.f * 1852.f);
             data.lon = OWN_LON + wE / (60.f * 1852.f * cosf(OWN_LAT * D2R));
+            data.lastLatUpdate = data.lastLonUpdate = now;
             data.lastGpsUpdate = now;
         }
 
@@ -239,14 +253,19 @@ void DemoDataSource::tick() {
         data.yaw        = hdg;
         data.rateOfTurn = rotDegMin;
         data.heave      = heave;
+        data.lastRollUpdate = data.lastPitchUpdate = data.lastYawUpdate = now;
+        data.lastRateOfTurnUpdate = data.lastHeaveUpdate = now;
         data.lastAttitudeUpdate = now;
-        data.lastHeaveUpdate    = now;
         data.pushHeaveSample(heave, now);
 
         // Tanks (demo): supply tanks slowly drain/refill, waste tanks fill.
         auto setTank = [&](uint8_t inst, uint8_t ft, float lvl, float cap) {
             TankInfo *tk = data.findOrCreateTank(inst, ft);
-            if (tk) { tk->level = lvl; tk->capacity = cap; tk->lastUpdate = now; }
+            if (tk) {
+                tk->level = lvl; tk->capacity = cap;
+                tk->lastLevelUpdate = tk->lastCapacityUpdate = now;
+                tk->lastUpdate = now;
+            }
         };
         setTank(0, 0, clamp(55.f + 30.f*sinf(t*2.f*PI_F/900.f),       5.f, 100.f), 200.f); // Diesel
         setTank(0, 1, clamp(50.f + 35.f*sinf(t*2.f*PI_F/700.f + 1.f), 0.f, 100.f), 150.f); // fresh water
@@ -264,8 +283,13 @@ void DemoDataSource::tick() {
                      : NAN;
         auto setBatt = [&](uint8_t inst, float v, float a, float soc, float trMin) {
             BatteryBank *b = data.findOrCreateBattery(inst);
-            if (b) { b->voltage = v; b->current = a; b->soc = soc;
-                     b->timeRemMin = trMin; b->temperature = 24.f; b->lastUpdate = now; }
+            if (b) {
+                b->voltage = v; b->current = a; b->soc = soc;
+                b->timeRemMin = trMin; b->temperature = 24.f;
+                b->lastVoltageUpdate = b->lastCurrentUpdate = now;
+                b->lastSocUpdate = b->lastTimeRemUpdate = now;
+                b->lastTemperatureUpdate = b->lastUpdate = now;
+            }
         };
         setBatt(0, 12.55f + svcA * 0.03f, svcA, svcSoc, svcMin);   // Service 200 Ah
         setBatt(1, 13.1f, 0.3f, 100.f, NAN);                       // Starter (floating, full)
@@ -285,6 +309,8 @@ void DemoDataSource::tick() {
         data.airTemp   = 18.f + 5.f*sinf(t*2.f*PI_F/240.f);
         data.waterTemp = 16.f + 2.f*sinf(t*2.f*PI_F/300.f + 1.f);
         data.humidity  = clamp(66.f + 16.f*sinf(t*2.f*PI_F/180.f + 2.f), 30.f, 99.f);
+        data.lastPressureUpdate = data.lastAirTempUpdate = now;
+        data.lastWaterTempUpdate = data.lastHumidityUpdate = now;
         data.lastEnvUpdate = now;
         data.pushPressureSample(press, now);
 
@@ -318,12 +344,16 @@ void DemoDataSource::tick() {
         data.coolantTemp  = 76.f + 11.f * rpmNorm + 1.5f * sinf(t / 30.f);// ~76–88 °C
         data.fuelFlow     = 0.8f + 9.0f * rpmNorm;                        // ~0.8–9.8 L/h
         data.engineHours  = 1287.4f + t / 3600.f;                         // creeps up
+        data.lastRpmUpdate = data.lastOilPressureUpdate = now;
+        data.lastCoolantTempUpdate = data.lastFuelFlowUpdate = now;
+        data.lastEngineHoursUpdate = data.lastEngineUpdate = now;
 
         // AP: standby
         data.apEngaged    = false;
 
         // Autopilot target: follow current COG
         data.apTargetHeading = hdg;
+        data.lastApTargetUpdate = data.lastApUpdate = now;
 
         // Push ring-buffer histories every ~5 s
         static uint32_t lastHist = 0;

@@ -110,7 +110,7 @@ void TankScreen::layout(int n) {
 
 void TankScreen::update() {
     // Snapshot present tanks under the lock.
-    struct T { uint8_t ft, inst; float lvl, cap; };
+    struct T { uint8_t ft, inst; float lvl, cap; uint32_t lastLevel, lastCapacity; };
     T list[DataModel::MAX_TANKS];
     int n = 0;
     {
@@ -121,6 +121,8 @@ void TankScreen::update() {
             list[n].inst = data.tanks[i].instance;
             list[n].lvl  = data.tanks[i].level;
             list[n].cap  = data.tanks[i].capacity;
+            list[n].lastLevel = data.tanks[i].lastLevelUpdate;
+            list[n].lastCapacity = data.tanks[i].lastCapacityUpdate;
             n++;
         }
     }
@@ -142,6 +144,9 @@ void TankScreen::update() {
         else                       snprintf(nm, sizeof(nm), "%s", tankName(list[i].ft));
         lv_label_set_text(r.name, nm);
 
+        if (!dmFresh(list[i].lastLevel, appConfig.cfg.dataTimeouts.tank)) list[i].lvl = NAN;
+        if (!dmFresh(list[i].lastCapacity, appConfig.cfg.dataTimeouts.tank)) list[i].cap = NAN;
+        if (isnan(list[i].lvl)) continue;
         int pct = (int)(list[i].lvl + 0.5f);                       // sender level
         lv_bar_set_value(r.bar, pct, LV_ANIM_OFF);
         lv_obj_set_style_bg_color(r.bar, tankColor(list[i].ft, list[i].lvl), LV_PART_INDICATOR);

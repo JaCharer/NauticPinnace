@@ -3,6 +3,7 @@
 #include "../Theme.h"
 #include "../UiConfig.h"
 #include "../../nmea/DataModel.h"
+#include "../../config/Config.h"
 #include <math.h>
 #include <string.h>
 
@@ -213,7 +214,7 @@ void AnchorScreen::draw() {
         gpsAge = millis() - data.lastGpsUpdate;
     }
 
-    bool gpsOk = !isnan(curLat) && !isnan(curLon) && gpsAge < 10000;
+    bool gpsOk = !isnan(curLat) && !isnan(curLon) && gpsAge < appConfig.cfg.dataTimeouts.gps;
 
     float distM = NAN, brg = NAN, nM = 0, eM = 0;
     if (set && gpsOk && !isnan(ancLat)) {
@@ -321,7 +322,7 @@ void AnchorScreen::cbSet(lv_event_t *e) {
     {
         auto lk = data.lock();
         lat = data.lat; lon = data.lon;
-        ok = !isnan(lat) && !isnan(lon) && (millis() - data.lastGpsUpdate) < 10000;
+        ok = !isnan(lat) && !isnan(lon) && (millis() - data.lastGpsUpdate) < appConfig.cfg.dataTimeouts.gps;
     }
     if (!ok) return;                       // no fix → ignore (status shown on screen)
     appConfig.cfg.anchorSet = true;

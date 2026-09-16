@@ -1,5 +1,6 @@
 #include "RouteScreen.h"
 #include "../Theme.h"
+#include "../../config/Config.h"
 #include "../../i18n/I18n.h"
 #include <math.h>
 #include <stdio.h>
@@ -88,6 +89,10 @@ void RouteScreen::update() {
         auto lk = data.lock();
         active = data.navActive; dtw = data.navDtw; btw = data.navBtw;
         xte = data.navXte; vmc = data.navVmc; wp = data.navWpNum;
+        if (!dmFresh(data.lastNavDtwUpdate, appConfig.cfg.dataTimeouts.nav)) dtw = NAN;
+        if (!dmFresh(data.lastNavBtwUpdate, appConfig.cfg.dataTimeouts.nav)) btw = NAN;
+        if (!dmFresh(data.lastNavXteUpdate, appConfig.cfg.dataTimeouts.nav)) xte = NAN;
+        if (!dmFresh(data.lastNavVmcUpdate, appConfig.cfg.dataTimeouts.nav)) vmc = NAN;
     }
     char b[28];
 

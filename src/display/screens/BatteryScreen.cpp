@@ -128,8 +128,10 @@ void BatteryScreen::update() {
     // Timed-out bank: blank the live fields so every isnan() branch below
     // renders it the same way as "never received" instead of a frozen reading.
     for (int i = 0; i < n; i++) {
-        if (!dmFresh(list[i].lastUpdate, appConfig.cfg.dataTimeouts.battery))
-            list[i].voltage = list[i].current = list[i].soc = list[i].timeRemMin = NAN;
+        if (!dmFresh(list[i].lastVoltageUpdate, appConfig.cfg.dataTimeouts.battery)) list[i].voltage = NAN;
+        if (!dmFresh(list[i].lastCurrentUpdate, appConfig.cfg.dataTimeouts.battery)) list[i].current = NAN;
+        if (!dmFresh(list[i].lastSocUpdate, appConfig.cfg.dataTimeouts.battery)) list[i].soc = NAN;
+        if (!dmFresh(list[i].lastTimeRemUpdate, appConfig.cfg.dataTimeouts.battery)) list[i].timeRemMin = NAN;
     }
     lv_obj_add_flag(_empty, LV_OBJ_FLAG_HIDDEN);
     if (n != _shownCount) { layout(n); _shownCount = n; }

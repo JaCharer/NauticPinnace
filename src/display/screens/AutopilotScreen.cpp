@@ -1,6 +1,7 @@
 #include "AutopilotScreen.h"
 #include "RenderYield.h"
 #include "../../PsramArena.h"
+#include "../../config/Config.h"
 #include "../UiConfig.h"
 #include "../CanvasDraw.h"
 #include <math.h>
@@ -264,9 +265,13 @@ void AutopilotScreen::update() {
     uint8_t mode;
     {
         auto lk = data.lock();
-        hdg     = isnan(data.hdg) ? data.cog : data.hdg;
+        const bool hdgFresh = dmFresh(data.lastHdgUpdate, appConfig.cfg.dataTimeouts.gps);
+        const bool cogFresh = dmFresh(data.lastCogUpdate, appConfig.cfg.dataTimeouts.gps);
+        hdg     = (hdgFresh && !isnan(data.hdg)) ? data.hdg : (cogFresh ? data.cog : NAN);
         target  = data.apTargetHeading;
         rudder  = data.apRudder;
+        if (!dmFresh(data.lastApTargetUpdate, appConfig.cfg.dataTimeouts.autopilot)) target = NAN;
+        if (!dmFresh(data.lastApRudderUpdate, appConfig.cfg.dataTimeouts.autopilot)) rudder = NAN;
         engaged = data.apEngaged;
         mode    = data.apMode;
     }

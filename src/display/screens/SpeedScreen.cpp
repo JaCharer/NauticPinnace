@@ -84,7 +84,13 @@ void SpeedScreen::create(lv_obj_t *parent) {
 
 void SpeedScreen::update() {
     float sog, stw, twa, tws;
-    { auto lk=data.lock(); sog=data.sog; stw=data.stw; twa=data.twa; tws=data.tws; }
+        { auto lk=data.lock();
+            sog=data.sog; stw=data.stw; twa=data.twa; tws=data.tws;
+            if (!dmFresh(data.lastSogUpdate, appConfig.cfg.dataTimeouts.gps)) sog = NAN;
+            if (!dmFresh(data.lastStwUpdate, appConfig.cfg.dataTimeouts.gps)) stw = NAN;
+            if (!dmFresh(data.lastTwaUpdate, appConfig.cfg.dataTimeouts.wind)) twa = NAN;
+            if (!dmFresh(data.lastTwsUpdate, appConfig.cfg.dataTimeouts.wind)) tws = NAN;
+        }
 
     char buf[16];
     fmtVal(buf, sizeof(buf), sog, 1); lv_label_set_text(_lblSog, buf);

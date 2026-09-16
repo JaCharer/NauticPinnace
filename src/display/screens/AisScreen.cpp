@@ -1,6 +1,7 @@
 #include "AisScreen.h"
 #include "RenderYield.h"
 #include "../../PsramArena.h"
+#include "../../config/Config.h"
 #include "../CanvasDraw.h"
 #include <math.h>
 #include <string.h>
@@ -118,7 +119,11 @@ void AisScreen::drawRadar() {
 
     // Heading vector
     float ownHdg;
-    { auto lk=data.lock(); ownHdg=isnan(data.cog)?data.hdg:data.cog; }
+        { auto lk=data.lock();
+            const bool cogFresh = dmFresh(data.lastCogUpdate, appConfig.cfg.dataTimeouts.gps);
+            const bool hdgFresh = dmFresh(data.lastHdgUpdate, appConfig.cfg.dataTimeouts.gps);
+            ownHdg = (cogFresh && !isnan(data.cog)) ? data.cog : (hdgFresh ? data.hdg : NAN);
+        }
     if (!isnan(ownHdg)) {
         ld.color = CLR_TEXT; ld.width = 2; ld.opa = OPA_FULL;
         float ar = ownHdg*DEG_TO_RAD;
@@ -134,6 +139,10 @@ void AisScreen::drawRadar() {
         auto lk = data.lock();
         cnt = data.aisCount;
         ownLat = data.lat; ownLon = data.lon;
+        if (!dmFresh(data.lastLatUpdate, appConfig.cfg.dataTimeouts.gps) ||
+            !dmFresh(data.lastLonUpdate, appConfig.cfg.dataTimeouts.gps)) {
+            ownLat = ownLon = NAN;
+        }
         memcpy(tgts, data.aisTargets, sizeof(AisTarget)*cnt);
     }
 
@@ -274,9 +283,13 @@ void AisScreen::onCanvasClick(lv_event_t *e) {
     {
         auto lk = data.lock();
         ownLat=data.lat; ownLon=data.lon;
+        if (!dmFresh(data.lastLatUpdate, appConfig.cfg.dataTimeouts.gps) ||
+            !dmFresh(data.lastLonUpdate, appConfig.cfg.dataTimeouts.gps)) {
+            ownLat = ownLon = NAN;
+        }
         for (int i=0;i<data.aisCount;i++) {
             AisTarget &t=data.aisTargets[i];
-            if (isnan(t.lat)||isnan(t.lon)||isnan(ownLat)) continue;
+            if (isnan(t.lat)||isnan(t.lon)||isnan(ownLat)||isnan(ownLon)) continue;
             float avgLat=(ownLat+t.lat)/2.0f*DEG_TO_RAD;
             float dx=(t.lon-ownLon)*60.0f*cosf(avgLat);
             float dy=(t.lat-ownLat)*60.0f;

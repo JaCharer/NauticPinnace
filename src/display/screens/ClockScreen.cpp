@@ -1,6 +1,7 @@
 #include "ClockScreen.h"
 #include "RenderYield.h"
 #include "../../PsramArena.h"
+#include "../../config/Config.h"
 #include "../Theme.h"
 #include "../../SunCalc.h"
 #if defined(BOARD_PANEL_1024X600)
@@ -134,6 +135,10 @@ void ClockScreen::update() {
         days = data.sysDays; secOfDay = data.sysSecOfDay; offMin = data.localOffsetMin;
         lastUpd = data.lastTimeUpdate; valid = data.timeValid;
         lat = data.lat; lon = data.lon;
+        if (!dmFresh(data.lastLatUpdate, appConfig.cfg.dataTimeouts.gps) ||
+            !dmFresh(data.lastLonUpdate, appConfig.cfg.dataTimeouts.gps)) {
+            lat = lon = NAN;
+        }
         bshIsBsh = data.tideIsBsh; bshCount = data.tideFcCount; bshLastMs = data.lastTideFcMs;
         for (int i = 0; i < bshCount && i < DataModel::MAX_TIDE_FC; i++) bshFc[i] = data.tideFc[i];
         snprintf(bshStation, sizeof(bshStation), "%s", data.tideStation);

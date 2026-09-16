@@ -101,7 +101,7 @@ void EngineScreen::onShow() {
 
 void EngineScreen::update() {
     float rpm; uint32_t lastEngineUpdate;
-    { auto lk = data.lock(); rpm = data.rpm; lastEngineUpdate = data.lastEngineUpdate; }
+    { auto lk = data.lock(); rpm = data.rpm; lastEngineUpdate = data.lastRpmUpdate; }
     if (!dmFresh(lastEngineUpdate, appConfig.cfg.dataTimeouts.engine)) rpm = NAN;
     EngineConfig ec = appConfig.cfg.engine;
 

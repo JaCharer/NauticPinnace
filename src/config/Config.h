@@ -71,13 +71,11 @@ struct GridConfig {
     GridCell cells[9];
 };
 
-// Per-category "how old can a value be before the UI treats it as gone"
-// thresholds, in milliseconds. The categories match DataModel's lastXUpdate
-// granularity (several related fields share one timestamp - see DataModel.h),
-// not individual fields. Defaults are generous multiples of each category's
-// typical NMEA 2000 transmit period, so a little jitter (especially over the
-// UDP/Actisense source, which can be burstier than raw CAN) never flickers
-// "stale" on its own.
+// Grouped "how old can a value be before the UI treats it as gone"
+// thresholds, in milliseconds. Freshness timestamps are tracked per value in
+// DataModel; one group timeout is shared by related values. Defaults are
+// generous multiples of each group's typical NMEA 2000 transmit period, so a
+// little jitter never flickers "stale" on its own.
 struct DataTimeouts {
     uint32_t gps          = 10000;    // lat/lon/sog/cog/hdg/variation/stw
     uint32_t wind         = 5000;     // awa/aws/twa/tws/twd

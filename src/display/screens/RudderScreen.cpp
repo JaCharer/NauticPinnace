@@ -1,6 +1,7 @@
 #include "RudderScreen.h"
 #include "RenderYield.h"
 #include "../../PsramArena.h"
+#include "../../config/Config.h"
 #include "../../i18n/I18n.h"
 #include "../UiConfig.h"
 #include "../CanvasDraw.h"
@@ -172,7 +173,10 @@ void RudderScreen::drawRudder(float angle) {
 
 void RudderScreen::update() {
     float angle;
-    { auto lk = data.lock(); angle = data.rudderAngle; }
+        { auto lk = data.lock();
+            angle = data.rudderAngle;
+            if (!dmFresh(data.lastRudderAngleUpdate, appConfig.cfg.dataTimeouts.rudder)) angle = NAN;
+        }
 
     drawRudder(angle);
 

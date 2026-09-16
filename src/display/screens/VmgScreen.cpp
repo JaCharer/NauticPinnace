@@ -1,5 +1,6 @@
 #include "VmgScreen.h"
 #include "../Theme.h"
+#include "../../config/Config.h"
 #include "../../PolarTable.h"
 #include "../../i18n/I18n.h"
 #include <math.h>
@@ -101,6 +102,9 @@ void VmgScreen::update() {
     {
         auto lk = data.lock();
         twa = data.twa; tws = data.tws; stw = data.stw;
+        if (!dmFresh(data.lastTwaUpdate, appConfig.cfg.dataTimeouts.wind)) twa = NAN;
+        if (!dmFresh(data.lastTwsUpdate, appConfig.cfg.dataTimeouts.wind)) tws = NAN;
+        if (!dmFresh(data.lastStwUpdate, appConfig.cfg.dataTimeouts.gps)) stw = NAN;
     }
     char b[24];
 

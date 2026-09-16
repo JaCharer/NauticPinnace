@@ -1,5 +1,6 @@
 #include "WeatherScreen.h"
 #include "../Theme.h"
+#include "../../config/Config.h"
 #include "../../i18n/I18n.h"
 #include <math.h>
 #include <stdio.h>
@@ -88,6 +89,10 @@ void WeatherScreen::update() {
     {
         auto lk = data.lock();
         air = data.airTemp; water = data.waterTemp; hum = data.humidity; press = data.pressure;
+        if (!dmFresh(data.lastAirTempUpdate, appConfig.cfg.dataTimeouts.env)) air = NAN;
+        if (!dmFresh(data.lastWaterTempUpdate, appConfig.cfg.dataTimeouts.env)) water = NAN;
+        if (!dmFresh(data.lastHumidityUpdate, appConfig.cfg.dataTimeouts.env)) hum = NAN;
+        if (!dmFresh(data.lastPressureUpdate, appConfig.cfg.dataTimeouts.env)) press = NAN;
         bool full = data.pressHistFull;
         int  idx  = data.pressHistIdx;
         n = full ? DataModel::PRESS_HIST : idx;

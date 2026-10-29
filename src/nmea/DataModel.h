@@ -109,6 +109,11 @@ public:
     uint32_t lastTwaUpdate = 0;
     uint32_t lastTwsUpdate = 0;
     uint32_t lastTwdUpdate = 0;
+    // Set ONLY when a bus device sends wind with reference "True North"
+    // (PGN 130306). While this is fresh the derived TWD fallback in
+    // N2kHandler::onWind() stays out of the way, so a real TWD sender
+    // always wins over the local hdg+variation+TWA estimate.
+    uint32_t lastTwdNetUpdate = 0;
     uint32_t lastWindUpdate = 0;
 
     // ---- Depth -------------------------------------------------------------
@@ -393,6 +398,7 @@ public:
         awa = aws = twa = tws = twd = NAN;
         lastAwaUpdate = lastAwsUpdate = lastTwaUpdate = lastTwsUpdate = 0;
         lastTwdUpdate = 0;
+        lastTwdNetUpdate = 0;
         lastWindUpdate = 0;
 
         // ---- Depth ----

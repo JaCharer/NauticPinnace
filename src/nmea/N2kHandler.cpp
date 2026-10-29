@@ -747,11 +747,34 @@ void N2kHandler::onWind(const tN2kMsg &msg) {
             if (!N2kIsNA(angle)) {
                 data.twd = fmod(angDeg + 360, 360);
                 data.lastTwdUpdate = now;
+                data.lastTwdNetUpdate = now;   // network TWD: suppresses the derived fallback below
                 updated = true;
             }
             break;
         default: break;
     }
+
+    // ── TWD fallback ──────────────────────────────────────────────────────
+    // Many networks carry TWA (reference True_water/True_boat) or only apparent
+    // wind plus a heading sensor, but have no "True North" wind sender - the
+    // wind-history rose (WindPlotScreen) then stays empty although
+    //   TWD = heading(mag) + variation + TWA   (mod 360)
+    // is fully determined. Derive it here, but only while no fresh NETWORK TWD
+    // exists (lastTwdNetUpdate), so a real True-North sender always wins.
+    // Variation (PGN 127250/127258) is added when fresh; without it the result
+    // is referenced to magnetic north - a few degrees off for the rose is far
+    // more useful than no TWD at all.
+    if (!dmFresh(data.lastTwdNetUpdate, appConfig.cfg.dataTimeouts.wind) &&
+        !isnan(data.twa) && dmFresh(data.lastTwaUpdate, appConfig.cfg.dataTimeouts.wind) &&
+        !isnan(data.hdg) && dmFresh(data.lastHdgUpdate, appConfig.cfg.dataTimeouts.gps)) {
+        float var = (!isnan(data.variation) &&
+                     dmFresh(data.lastVariationUpdate, appConfig.cfg.dataTimeouts.gps))
+                    ? data.variation : 0.f;
+        data.twd = fmodf(data.hdg + var + data.twa + 720.f, 360.f);
+        data.lastTwdUpdate = now;
+        updated = true;
+    }
+
     if (updated) data.lastWindUpdate = now;
     if (!isnan(data.twd)) data.pushWindSample(data.twd, data.tws);
 }

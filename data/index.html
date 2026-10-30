@@ -2597,7 +2597,12 @@ function importConfig(evt) {
   reader.onload=async e=>{
     const r=await fetch('/api/import',{method:'POST',headers:{'Content-Type':'application/json'},body:e.target.result});
     const j=await r.json().catch(()=>null);
-    j?.ok ? toast(t('TOAST_IMPORTED')) && setTimeout(loadConfig,800) : toast(t('TOAST_IMPORT_ERR'),true);
+    // toast() returns undefined, so `toast(...) && setTimeout(...)` could never
+    // fire - after a successful import the page kept showing the pre-import
+    // values until a manual reload (and a later "Save" would overwrite the
+    // imported config with that stale form state).
+    if (j?.ok) { toast(t('TOAST_IMPORTED')); setTimeout(loadConfig,800); }
+    else toast(t('TOAST_IMPORT_ERR'),true);
   };
   reader.readAsText(file);
 }

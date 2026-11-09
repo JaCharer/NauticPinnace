@@ -1,5 +1,51 @@
 # NauticPinnace
 
+## Changes since the initial release
+
+This section summarises everything merged into `main` after the initial
+release commit (`7e139b7`), branch by branch. All feature branches below are
+fully contained in `main` today.
+
+### `feature/nmea-udp-actisense` — NMEA 2000 over UDP
+- **New data source**: the display can receive NMEA 2000 frames over WiFi in
+  Actisense format (UDP), as an alternative to the CAN bus — wired into the
+  same PGN dispatcher, so every screen works identically on both sources.
+- Settings sub-page on the device (UDP enable, remote IP, local/remote ports).
+- Replaces the earlier experimental `src/nmea_udp/` code with the production
+  `src/nmea/N2kUdpSource.*` implementation.
+
+### `feature/data-staleness-timeouts` — data freshness
+- **Configurable per-category staleness timeouts** (`DataTimeouts`): GPS,
+  wind, depth, engine, rudder, attitude, environment, log, nav, autopilot,
+  Fusion, tide, battery, tank, AIS — editable in the web UI.
+- Read-side freshness check (`dmFresh`): a value that stops arriving is shown
+  as gone after its timeout instead of freezing forever.
+
+### `feature/nmea-udp-and-timeouts` — integration + fixes
+- Merged the two branches above and fixed what they exposed:
+- **Engine data flicker fix**: PGN 127489 (oil/coolant/fuel/hours) never
+  refreshed the shared engine timestamp, so engine values flickered stale.
+- **Per-value data invalidation**: freshness is tracked per value, not per
+  message group.
+
+### `feature/twd-fallback-from-twa` — derived true wind direction
+- **TWD fallback**: when no device on the bus sends wind with reference
+  "True North" (PGN 130306), true wind direction is now derived as
+  `heading + magnetic variation + TWA (mod 360)` — provided TWA and heading
+  are fresh. A real network TWD sender always wins over the derived value.
+- Effect: the **wind-history rose** (Wind plot screen) now collects data on
+  networks that only carry TWA/apparent wind plus a heading sensor.
+
+### `fix/webui-import-reload` — web UI import fix
+- After importing a config file, the web UI never reloaded the forms
+  (`toast(...) && setTimeout(loadConfig)` short-circuited because `toast()`
+  returns `undefined`). The page showed pre-import values until a manual
+  reload — and pressing **Save** would silently overwrite the freshly
+  imported config with that stale form state. Fixed; forms now refresh
+  automatically ~0.8 s after a successful import.
+
+---
+
 A DIY **NMEA 2000 instrument display** for sailing yachts, running on three
 **Waveshare ESP32-S3** touch boards: the 4-inch (480 × 480) and the two
 1024 × 600 panels, 7-inch and 5-inch (see [Hardware](#hardware)).
